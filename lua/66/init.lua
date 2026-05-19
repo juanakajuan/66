@@ -181,6 +181,7 @@ local function submit_prompt(prompt_bufnr, context)
     prompt,
   }
 
+  vim.bo[prompt_bufnr].modified = false
   vim.cmd("close")
   show_response(command)
 end
@@ -200,10 +201,8 @@ function M.ask()
   vim.bo[prompt_bufnr].swapfile = false
   vim.bo[prompt_bufnr].filetype = "markdown"
   vim.api.nvim_buf_set_name(prompt_bufnr, "66 ask")
-  vim.api.nvim_buf_set_lines(prompt_bufnr, 0, -1, false, {
-    "Ask about the selected code, then write this buffer to submit.",
-    "",
-  })
+  vim.api.nvim_buf_set_lines(prompt_bufnr, 0, -1, false, {})
+  vim.bo[prompt_bufnr].modified = false
   vim.api.nvim_create_autocmd("BufWriteCmd", {
     buffer = prompt_bufnr,
     once = true,
