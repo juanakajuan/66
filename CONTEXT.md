@@ -12,19 +12,19 @@ _Avoid_: visual replace, edit selection
 The bounded context sent with an ask, including the selected region, file path, filetype, and current file when small enough.
 _Avoid_: whole codebase context
 
-**Response Split**:
-A Neovim split buffer that displays the AI response without modifying source files.
+**Response View**:
+A configurable Neovim scratch buffer surface that displays the AI response without modifying source files.
 _Avoid_: replacement buffer, output file
 
 ## Relationships
 
 - An **Ask About Selection** uses exactly one **Selection Context**.
-- An **Ask About Selection** produces exactly one **Response Split**.
+- An **Ask About Selection** produces exactly one **Response View**.
 
 ## Example dialogue
 
 > **Dev:** "If I select a function and ask why it fails, will 66 edit the function?"
-> **Domain expert:** "No — **Ask About Selection** is read-only and shows the answer in a **Response Split**."
+> **Domain expert:** "No — **Ask About Selection** is read-only and shows the answer in a **Response View**."
 
 ## Flagged ambiguities
 

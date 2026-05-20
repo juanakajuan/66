@@ -5,11 +5,19 @@ local defaults = {
 	variant = "low",
 	agent = "build",
 	max_file_lines = 400,
+	response_layout = "bottom_split",
 	keymap = "<leader>6a",
 }
 
 local config = vim.deepcopy(defaults)
 local did_setup = false
+
+local response_layouts = {
+	right_split = true,
+	bottom_split = true,
+	float = true,
+	tab = true,
+}
 
 local function normalize_range(bufnr, start_pos, end_pos, selection_mode)
 	if start_pos[2] == 0 or end_pos[2] == 0 then
@@ -111,8 +119,7 @@ local function build_prompt(question, context)
 	}, "\n")
 end
 
-local function open_scratch_split(name, lines, filetype)
-	vim.cmd("botright vertical new")
+local function prepare_scratch_buffer(name, lines, filetype)
 	local bufnr = vim.api.nvim_get_current_buf()
 
 	vim.bo[bufnr].buftype = "nofile"
@@ -123,6 +130,34 @@ local function open_scratch_split(name, lines, filetype)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
 	return bufnr
+end
+
+local function open_scratch_response(name, lines, filetype)
+	if config.response_layout == "right_split" then
+		vim.cmd("botright vertical new")
+	elseif config.response_layout == "bottom_split" then
+		vim.cmd("botright new")
+	elseif config.response_layout == "tab" then
+		vim.cmd("tabnew")
+	elseif config.response_layout == "float" then
+		local bufnr = vim.api.nvim_create_buf(false, true)
+		local width = math.min(100, math.max(50, math.floor(vim.o.columns * 0.75)))
+		local height = math.min(30, math.max(10, math.floor(vim.o.lines * 0.65)))
+
+		vim.api.nvim_open_win(bufnr, true, {
+			relative = "editor",
+			style = "minimal",
+			border = "rounded",
+			title = " 66 response ",
+			title_pos = "center",
+			width = width,
+			height = height,
+			row = math.floor((vim.o.lines - height) / 2),
+			col = math.floor((vim.o.columns - width) / 2),
+		})
+	end
+
+	return prepare_scratch_buffer(name, lines, filetype)
 end
 
 local function open_prompt_float()
@@ -169,7 +204,7 @@ local function strip_opencode_prologue(text)
 end
 
 local function show_response(command)
-	local response_bufnr = open_scratch_split("66 response", {
+	local response_bufnr = open_scratch_response("66 response", {
 		"Loading...",
 		"",
 		table.concat(vim.list_slice(command, 1, #command - 1), " "),
@@ -279,9 +314,12 @@ function M.ask()
 end
 
 --- Configure the 66 prototype.
---- @param opts? { model?: string, variant?: string, agent?: string, max_file_lines?: integer, keymap?: string|false }
+--- @param opts? { model?: string, variant?: string, agent?: string, max_file_lines?: integer, response_layout?: "right_split"|"bottom_split"|"float"|"tab", keymap?: string|false }
 function M.setup(opts)
 	config = vim.tbl_deep_extend("force", defaults, opts or {})
+	if not response_layouts[config.response_layout] then
+		error("invalid 66 response_layout: " .. tostring(config.response_layout), 0)
+	end
 
 	vim.api.nvim_create_user_command("Ask66", function()
 		M.ask()
