@@ -248,6 +248,7 @@ function M.ask()
 	end
 
 	local prompt_bufnr = open_prompt_float()
+
 	vim.bo[prompt_bufnr].buftype = "acwrite"
 	vim.bo[prompt_bufnr].bufhidden = "wipe"
 	vim.bo[prompt_bufnr].swapfile = false
@@ -255,6 +256,17 @@ function M.ask()
 	vim.api.nvim_buf_set_name(prompt_bufnr, "66 ask")
 	vim.api.nvim_buf_set_lines(prompt_bufnr, 0, -1, false, {})
 	vim.bo[prompt_bufnr].modified = false
+
+	-- Don't ask if we want to save the prompt buffer when closing
+	vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+		buffer = prompt_bufnr,
+		callback = function()
+			if vim.api.nvim_buf_is_valid(prompt_bufnr) then
+				vim.bo[prompt_bufnr].modified = false
+			end
+		end,
+	})
+
 	vim.api.nvim_create_autocmd("BufWriteCmd", {
 		buffer = prompt_bufnr,
 		once = true,
