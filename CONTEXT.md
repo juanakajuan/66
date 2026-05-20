@@ -12,14 +12,33 @@ _Avoid_: visual replace, edit selection
 The bounded context sent with an ask, including the selected region, file path, filetype, and current file when small enough.
 _Avoid_: whole codebase context
 
+**Project**:
+The current Neovim working directory used as the boundary for Project Search.
+_Avoid_: git root, current file directory
+
 **Response View**:
 A configurable Neovim scratch buffer surface that displays the AI response without modifying source files.
 _Avoid_: replacement buffer, output file
+
+**Project Search**:
+A read-only workflow where the user asks an AI to find relevant code locations across the project and receives a quickfix list.
+_Avoid_: edit workflow, replacement workflow, whole-project answer
+
+**Search Question**:
+The user-authored prompt for a Project Search. It is sent without Selection Context by default.
+_Avoid_: selected code, current file snapshot
+
+**Search Result**:
+A navigable quickfix item that points to a relevant file location and explains why it matched the search question.
+_Avoid_: prose-only answer, generated patch
 
 ## Relationships
 
 - An **Ask About Selection** uses exactly one **Selection Context**.
 - An **Ask About Selection** produces exactly one **Response View**.
+- A **Project Search** is bounded by one **Project**.
+- A **Project Search** uses exactly one **Search Question**.
+- A **Project Search** produces zero or more **Search Results** without modifying source files.
 
 ## Example dialogue
 
