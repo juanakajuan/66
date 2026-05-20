@@ -171,6 +171,8 @@ local function open_prompt_float()
 		border = "rounded",
 		title = " 66 ask ",
 		title_pos = "center",
+		footer = " :w send  :q close ",
+		footer_pos = "center",
 		width = width,
 		height = height,
 		row = math.floor((vim.o.lines - height) / 2),
