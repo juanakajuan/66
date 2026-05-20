@@ -125,6 +125,26 @@ local function open_scratch_split(name, lines, filetype)
 	return bufnr
 end
 
+local function open_prompt_float()
+	local bufnr = vim.api.nvim_create_buf(false, true)
+	local width = math.min(80, math.max(40, math.floor(vim.o.columns * 0.7)))
+	local height = math.min(12, math.max(6, math.floor(vim.o.lines * 0.3)))
+
+	vim.api.nvim_open_win(bufnr, true, {
+		relative = "editor",
+		style = "minimal",
+		border = "rounded",
+		title = " 66 ask ",
+		title_pos = "center",
+		width = width,
+		height = height,
+		row = math.floor((vim.o.lines - height) / 2),
+		col = math.floor((vim.o.columns - width) / 2),
+	})
+
+	return bufnr
+end
+
 --- Drop opencode's captured status prologue from response text.
 local function strip_opencode_prologue(text)
 	local lines = vim.split(text, "\n", { plain = true })
@@ -227,8 +247,7 @@ function M.ask()
 		return
 	end
 
-	vim.cmd("botright 8new")
-	local prompt_bufnr = vim.api.nvim_get_current_buf()
+	local prompt_bufnr = open_prompt_float()
 	vim.bo[prompt_bufnr].buftype = "acwrite"
 	vim.bo[prompt_bufnr].bufhidden = "wipe"
 	vim.bo[prompt_bufnr].swapfile = false
