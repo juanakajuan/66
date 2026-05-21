@@ -19,6 +19,9 @@ local SESSION_TITLE_PREFIX = "[66]"
 --- @field info { role?: string, time?: { created?: integer } }
 --- @field parts OpencodeMessagePart[]
 
+--- Decode JSON from opencode output that may include leading non-JSON text.
+--- @param text string
+--- @return any?
 local function decode_json(text)
 	local object_start = text:find("{", 1, true)
 	local array_start = text:find("[", 1, true)
@@ -39,6 +42,9 @@ local function decode_json(text)
 	return decoded
 end
 
+--- Format an opencode millisecond timestamp for display.
+--- @param ms any
+--- @return string
 local function format_time(ms)
 	if type(ms) ~= "number" then
 		return "unknown time"
@@ -54,6 +60,7 @@ local function is_66_session(session)
 	return type(session.title) == "string" and vim.startswith(session.title, SESSION_TITLE_PREFIX)
 end
 
+--- Append non-empty text message parts to response lines.
 --- @param responses string[]
 --- @param parts OpencodeMessagePart[]?
 local function append_text_parts(responses, parts)
@@ -79,6 +86,7 @@ local function assistant_response(messages)
 	return table.concat(responses, "\n\n")
 end
 
+--- Render a session export as markdown lines for a Response View.
 --- @param session OpencodeSession
 --- @param exported { info?: { title?: string, time?: { updated?: integer } }, messages?: OpencodeMessage[] }
 --- @return string[]
@@ -103,6 +111,9 @@ local function render_session(session, exported)
 	return lines
 end
 
+--- Run an opencode history command in the current Project.
+--- @param command string[]
+--- @param on_complete fun(result: vim.SystemCompleted, text: string)
 local function run_command(command, on_complete)
 	local stdout = {}
 	local stderr = {}
@@ -132,6 +143,10 @@ local function run_command(command, on_complete)
 	)
 end
 
+--- Show opencode failure output for Session History.
+--- @param title string
+--- @param code integer
+--- @param text string
 local function show_error(title, code, text)
 	ui.open_scratch_response(
 		title,
@@ -150,6 +165,7 @@ local function show_parse_error(message, text)
 	ui.open_scratch_response("66 history error", lines, "markdown")
 end
 
+--- Export and open one selected opencode session.
 --- @param session OpencodeSession
 local function open_session(session)
 	local stop_spinner = ui.start_status_spinner("Loading session")
@@ -170,6 +186,7 @@ local function open_session(session)
 	end)
 end
 
+--- Prompt the user to choose one 66-created opencode session.
 --- @param sessions OpencodeSession[]
 local function select_session(sessions)
 	vim.ui.select(sessions, {

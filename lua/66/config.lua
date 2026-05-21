@@ -1,5 +1,15 @@
 local M = {}
 
+--- @class SixtySixConfig
+--- @field model string opencode model identifier.
+--- @field variant string opencode variant name.
+--- @field agent string opencode agent name.
+--- @field max_file_lines integer Maximum current-file lines sent as Selection Context.
+--- @field response_layout "right_split"|"bottom_split"|"float"|"tab" Response View placement.
+--- @field ask_keymap string|false Visual-mode Ask About Selection mapping, or false to disable.
+--- @field search_keymap string|false Normal-mode Project Search mapping, or false to disable.
+--- @field history_keymap string|false Normal-mode Session History mapping, or false to disable.
+
 local defaults = {
 	model = "openai/gpt-5.5",
 	variant = "low",
@@ -21,14 +31,14 @@ local response_layouts = {
 local config = vim.deepcopy(defaults)
 
 --- Return the active 66 configuration.
---- @return table
+--- @return SixtySixConfig
 function M.options()
 	return config
 end
 
 --- Configure 66 from user options.
---- @param opts? { model?: string, variant?: string, agent?: string, max_file_lines?: integer, response_layout?: "right_split"|"bottom_split"|"float"|"tab", ask_keymap?: string|false, search_keymap?: string|false, history_keymap?: string|false }
---- @return table
+--- @param opts? table Partial `SixtySixConfig` override table.
+--- @return SixtySixConfig
 function M.setup(opts)
 	config = vim.tbl_deep_extend("force", defaults, opts or {})
 	if not response_layouts[config.response_layout] then

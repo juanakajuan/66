@@ -4,6 +4,16 @@ local ui = require("66.ui")
 
 local M = {}
 
+--- @class SearchResult
+--- @field filename string Absolute file path for quickfix navigation.
+--- @field lnum integer 1-based start line.
+--- @field col integer 1-based start column.
+--- @field end_lnum integer 1-based end line.
+--- @field text string Single-line match explanation.
+
+--- Parse one strict Search Result line into a quickfix item.
+--- @param line string `/absolute/path:line:column,count,notes`.
+--- @return SearchResult?
 local function parse_search_result(line)
 	local filepath, lnum_raw, col_raw, count_raw, notes = line:match("^(/.*):(%d+):(%d+),(%d+),?(.*)$")
 	if not filepath then
@@ -26,6 +36,9 @@ local function parse_search_result(line)
 	}
 end
 
+--- Parse opencode Project Search output into quickfix items.
+--- @param text string
+--- @return SearchResult[]
 local function parse_search_results(text)
 	local items = {}
 	for _, line in ipairs(vim.split(text, "\n", { trimempty = true })) do
@@ -37,6 +50,9 @@ local function parse_search_results(text)
 	return items
 end
 
+--- Build a bounded quickfix title from the Search Question.
+--- @param question string
+--- @return string
 local function quickfix_title(question)
 	local title = question:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
 	if #title > 80 then
@@ -45,6 +61,9 @@ local function quickfix_title(question)
 	return "66 Search: " .. title
 end
 
+--- Show unparseable Project Search output in a Response View for debugging.
+--- @param question string
+--- @param text string
 local function show_search_raw_output(question, text)
 	if text == "" then
 		text = "Project Search completed without parseable Search Results."
@@ -58,6 +77,9 @@ local function show_search_raw_output(question, text)
 	}, "markdown")
 end
 
+--- Show opencode failure output for a Project Search.
+--- @param code integer
+--- @param text string
 local function show_search_error(code, text)
 	local lines = vim.split(string.format("opencode exited with code %d\n\n%s", code, text), "\n", { plain = true })
 	ui.open_scratch_response("66 search error", lines, "markdown")

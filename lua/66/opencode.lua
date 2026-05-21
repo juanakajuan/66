@@ -31,6 +31,10 @@ local function strip_opencode_prologue(text)
 	return table.concat(vim.list_slice(lines, start), "\n")
 end
 
+--- Build an opencode session title that Session History can identify.
+--- @param kind "Ask"|"Search"
+--- @param text string
+--- @return string
 local function session_title(kind, text)
 	local title = text:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
 
@@ -152,10 +156,16 @@ function M.show_response(command)
 	end)
 end
 
+--- Build an Ask About Selection session title.
+--- @param question string
+--- @return string
 function M.ask_title(question)
 	return session_title("Ask", question)
 end
 
+--- Build a Project Search session title.
+--- @param question string
+--- @return string
 function M.search_title(question)
 	return session_title("Search", question)
 end

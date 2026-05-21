@@ -2,8 +2,13 @@ local config = require("66.config")
 
 local M = {}
 
+--- Animated glyphs used by Response View and status spinners.
 M.spinner_frames = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" }
 
+--- Apply common scratch-buffer options.
+--- @param bufnr integer
+--- @param buftype string
+--- @param filetype string
 local function configure_scratch_buffer(bufnr, buftype, filetype)
 	vim.bo[bufnr].buftype = buftype
 	vim.bo[bufnr].bufhidden = "wipe"
@@ -11,6 +16,11 @@ local function configure_scratch_buffer(bufnr, buftype, filetype)
 	vim.bo[bufnr].filetype = filetype
 end
 
+--- Name and populate the current scratch buffer.
+--- @param name string
+--- @param lines string[]
+--- @param filetype? string
+--- @return integer bufnr
 local function prepare_scratch_buffer(name, lines, filetype)
 	local bufnr = vim.api.nvim_get_current_buf()
 
@@ -55,6 +65,10 @@ function M.open_scratch_response(name, lines, filetype)
 	return prepare_scratch_buffer(name, lines, filetype)
 end
 
+--- Open the floating prompt buffer used to collect user questions.
+--- @param title string
+--- @param name string
+--- @return integer bufnr
 local function open_prompt_float(title, name)
 	local bufnr = vim.api.nvim_create_buf(false, true)
 	local width = math.min(80, math.max(40, math.floor(vim.o.columns * 0.7)))
@@ -82,6 +96,10 @@ local function open_prompt_float(title, name)
 	return bufnr
 end
 
+--- Read and submit prompt-buffer text.
+--- @param prompt_bufnr integer
+--- @param label string
+--- @param on_submit fun(question: string)
 local function submit_prompt(prompt_bufnr, label, on_submit)
 	local question = table.concat(vim.api.nvim_buf_get_lines(prompt_bufnr, 0, -1, false), "\n")
 	if question:gsub("%s", "") == "" then

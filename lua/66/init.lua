@@ -27,7 +27,7 @@ function M.history()
 end
 
 --- Configure the 66 prototype.
---- @param opts? { model?: string, variant?: string, agent?: string, max_file_lines?: integer, response_layout?: "right_split"|"bottom_split"|"float"|"tab", ask_keymap?: string|false, search_keymap?: string|false, history_keymap?: string|false }
+--- @param opts? table Partial `SixtySixConfig` override table.
 function M.setup(opts)
 	local options = config.setup(opts)
 

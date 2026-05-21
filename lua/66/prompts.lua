@@ -2,7 +2,7 @@ local M = {}
 
 --- Build the read-only Ask About Selection prompt.
 --- @param question string
---- @param context { path: string, filetype: string, start_line: integer, end_line: integer, selected: string, current_file: string }
+--- @param context SelectionContext
 --- @return string
 function M.ask(question, context)
 	return table.concat({

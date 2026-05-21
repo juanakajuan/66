@@ -2,6 +2,23 @@ local config = require("66.config")
 
 local M = {}
 
+--- @class SelectionContext
+--- @field path string Absolute path of the selected buffer, or empty for unnamed buffers.
+--- @field filetype string Neovim filetype for the selected buffer.
+--- @field start_line integer 1-based first selected line.
+--- @field end_line integer 1-based last selected line.
+--- @field selected string Selected text prefixed with source line numbers.
+--- @field current_file string Whole current file with line numbers, or an omission notice when too large.
+
+--- Normalize visual marks into zero-based buffer text coordinates.
+--- @param bufnr integer
+--- @param start_pos [integer, integer, integer, integer]
+--- @param end_pos [integer, integer, integer, integer]
+--- @param selection_mode string
+--- @return integer start_row
+--- @return integer start_col
+--- @return integer end_row
+--- @return integer end_col
 local function normalize_range(bufnr, start_pos, end_pos, selection_mode)
 	if start_pos[2] == 0 or end_pos[2] == 0 then
 		error("missing visual selection", 0)
@@ -30,6 +47,10 @@ local function normalize_range(bufnr, start_pos, end_pos, selection_mode)
 	return start_row, start_col, end_row, end_col
 end
 
+--- Prefix lines with their 1-based source line numbers.
+--- @param lines string[]
+--- @param start_line integer
+--- @return string
 local function with_line_numbers(lines, start_line)
 	local numbered = {}
 	for index, line in ipairs(lines) do
@@ -38,6 +59,9 @@ local function with_line_numbers(lines, start_line)
 	return table.concat(numbered, "\n")
 end
 
+--- Return bounded current-file context for an Ask About Selection prompt.
+--- @param bufnr integer
+--- @return string
 local function current_file_context(bufnr)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 	local opts = config.options()
@@ -53,7 +77,7 @@ local function current_file_context(bufnr)
 end
 
 --- Capture the current visual selection and bounded file context.
---- @return { path: string, filetype: string, start_line: integer, end_line: integer, selected: string, current_file: string }
+--- @return SelectionContext
 function M.selection()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local mode = vim.fn.mode()
