@@ -9,21 +9,24 @@ local M = {}
 local function strip_opencode_prologue(text)
 	local lines = vim.split(text, "\n", { plain = true })
 	local start = 1
+
 	local function is_ansi_reset_line(line)
 		return line:match("^%s*\27%[[%d;]*m%s*$") or line:match("^%s*%[[%d;]*m%s*$")
 	end
 
-	while lines[start] and is_ansi_reset_line(lines[start]) do
-		start = start + 1
+	local function skip_ansi_reset_lines()
+		while lines[start] and is_ansi_reset_line(lines[start]) do
+			start = start + 1
+		end
 	end
+
+	skip_ansi_reset_lines()
 
 	if lines[start] and lines[start]:match("^%s*>%s+[%w_-]+%s+·%s+.+%s*$") then
 		start = start + 1
 	end
 
-	while lines[start] and is_ansi_reset_line(lines[start]) do
-		start = start + 1
-	end
+	skip_ansi_reset_lines()
 
 	return table.concat(vim.list_slice(lines, start), "\n")
 end
@@ -64,21 +67,19 @@ end
 --- @param on_complete fun(result: vim.SystemCompleted, text: string)
 function M.run(command, on_complete)
 	local output = {}
+	local function append_output(_, data)
+		if data and data ~= "" then
+			table.insert(output, data)
+		end
+	end
+
 	vim.system(
 		command,
 		{
 			text = true,
 			cwd = vim.fn.getcwd(),
-			stdout = function(_, data)
-				if data and data ~= "" then
-					table.insert(output, data)
-				end
-			end,
-			stderr = function(_, data)
-				if data and data ~= "" then
-					table.insert(output, data)
-				end
-			end,
+			stdout = append_output,
+			stderr = append_output,
 		},
 		vim.schedule_wrap(function(result)
 			local text = table.concat(output, "")

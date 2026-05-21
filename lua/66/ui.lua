@@ -4,13 +4,17 @@ local M = {}
 
 M.spinner_frames = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" }
 
+local function configure_scratch_buffer(bufnr, buftype, filetype)
+	vim.bo[bufnr].buftype = buftype
+	vim.bo[bufnr].bufhidden = "wipe"
+	vim.bo[bufnr].swapfile = false
+	vim.bo[bufnr].filetype = filetype
+end
+
 local function prepare_scratch_buffer(name, lines, filetype)
 	local bufnr = vim.api.nvim_get_current_buf()
 
-	vim.bo[bufnr].buftype = "nofile"
-	vim.bo[bufnr].bufhidden = "wipe"
-	vim.bo[bufnr].swapfile = false
-	vim.bo[bufnr].filetype = filetype or "markdown"
+	configure_scratch_buffer(bufnr, "nofile", filetype or "markdown")
 	vim.api.nvim_buf_set_name(bufnr, name)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
@@ -70,10 +74,7 @@ local function open_prompt_float(title, name)
 		col = math.floor((vim.o.columns - width) / 2),
 	})
 
-	vim.bo[bufnr].buftype = "acwrite"
-	vim.bo[bufnr].bufhidden = "wipe"
-	vim.bo[bufnr].swapfile = false
-	vim.bo[bufnr].filetype = "markdown"
+	configure_scratch_buffer(bufnr, "acwrite", "markdown")
 	vim.api.nvim_buf_set_name(bufnr, name)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
 	vim.bo[bufnr].modified = false
@@ -142,9 +143,7 @@ function M.start_status_spinner(label)
 	local running = true
 	local frame = 1
 
-	vim.bo[bufnr].buftype = "nofile"
-	vim.bo[bufnr].bufhidden = "wipe"
-	vim.bo[bufnr].swapfile = false
+	configure_scratch_buffer(bufnr, "nofile", "")
 
 	local function render()
 		if not running then

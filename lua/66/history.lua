@@ -54,6 +54,16 @@ local function is_66_session(session)
 	return type(session.title) == "string" and vim.startswith(session.title, SESSION_TITLE_PREFIX)
 end
 
+--- @param responses string[]
+--- @param parts OpencodeMessagePart[]?
+local function append_text_parts(responses, parts)
+	for _, part in ipairs(parts or {}) do
+		if part.type == "text" and part.text and part.text:gsub("%s", "") ~= "" then
+			table.insert(responses, part.text)
+		end
+	end
+end
+
 --- Extract assistant text from an exported opencode session.
 --- @param messages OpencodeMessage[]
 --- @return string
@@ -62,11 +72,7 @@ local function assistant_response(messages)
 	for _, message in ipairs(messages) do
 		local role = message.info and message.info.role or ""
 		if role == "assistant" then
-			for _, part in ipairs(message.parts or {}) do
-				if part.type == "text" and part.text and part.text:gsub("%s", "") ~= "" then
-					table.insert(responses, part.text)
-				end
-			end
+			append_text_parts(responses, message.parts)
 		end
 	end
 
@@ -136,6 +142,14 @@ local function show_error(title, code, text)
 	)
 end
 
+--- @param message string
+--- @param text string
+local function show_parse_error(message, text)
+	local lines = { message, "" }
+	vim.list_extend(lines, vim.split(text, "\n", { plain = true }))
+	ui.open_scratch_response("66 history error", lines, "markdown")
+end
+
 --- @param session OpencodeSession
 local function open_session(session)
 	local stop_spinner = ui.start_status_spinner("Loading session")
@@ -148,9 +162,7 @@ local function open_session(session)
 
 		local exported = decode_json(text)
 		if type(exported) ~= "table" then
-			local lines = { "Could not parse opencode session export.", "" }
-			vim.list_extend(lines, vim.split(text, "\n", { plain = true }))
-			ui.open_scratch_response("66 history error", lines, "markdown")
+			show_parse_error("Could not parse opencode session export.", text)
 			return
 		end
 
@@ -187,9 +199,7 @@ function M.run()
 
 			local sessions = decode_json(text)
 			if type(sessions) ~= "table" then
-				local lines = { "Could not parse opencode session list.", "" }
-				vim.list_extend(lines, vim.split(text, "\n", { plain = true }))
-				ui.open_scratch_response("66 history error", lines, "markdown")
+				show_parse_error("Could not parse opencode session list.", text)
 				return
 			end
 			local plugin_sessions = vim.tbl_filter(is_66_session, sessions)
