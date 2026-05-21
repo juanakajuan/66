@@ -67,7 +67,7 @@ end
 --- @param question string
 function M.run(question)
 	local stop_spinner = ui.start_status_spinner("Searching")
-	opencode.run(opencode.command(prompts.search(question)), function(result, text)
+	opencode.run(opencode.command(prompts.search(question), opencode.search_title(question)), function(result, text)
 		stop_spinner()
 
 		if result.code ~= 0 then

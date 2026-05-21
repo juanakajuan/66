@@ -32,6 +32,10 @@ _Avoid_: selected code, current file snapshot
 A navigable quickfix item that points to a relevant file location and explains why it matched the search question.
 _Avoid_: prose-only answer, generated patch
 
+**Session History**:
+A read-only workflow where the user lists prior opencode sessions for the current Project and opens a transcript in a Response View.
+_Avoid_: session mutation, external archive browser
+
 ## Relationships
 
 - An **Ask About Selection** uses exactly one **Selection Context**.
@@ -39,6 +43,8 @@ _Avoid_: prose-only answer, generated patch
 - A **Project Search** is bounded by one **Project**.
 - A **Project Search** uses exactly one **Search Question**.
 - A **Project Search** produces zero or more **Search Results** without modifying source files.
+- A **Session History** is bounded by one **Project**.
+- A **Session History** opens a selected opencode session as a **Response View**.
 
 ## Example dialogue
 

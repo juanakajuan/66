@@ -1,7 +1,9 @@
 local config = require("66.config")
+local ui = require("66.ui")
+
 local ask = require("66.ask")
 local search = require("66.search")
-local ui = require("66.ui")
+local history = require("66.history")
 
 local M = {}
 
@@ -17,6 +19,11 @@ function M.search()
 	ui.capture_prompt(" 66 search ", "66 search", "Search66", function(question)
 		search.run(question)
 	end)
+end
+
+--- Show opencode sessions for the current project.
+function M.history()
+	history.run()
 end
 
 --- Configure the 66 prototype.

@@ -28,10 +28,21 @@ local function strip_opencode_prologue(text)
 	return table.concat(vim.list_slice(lines, start), "\n")
 end
 
+local function session_title(kind, text)
+	local title = text:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+
+	if #title > 80 then
+		title = title:sub(1, 77) .. "..."
+	end
+
+	return string.format("[66] %s: %s", kind, title)
+end
+
 --- Build an opencode command for the active config.
 --- @param prompt string
+--- @param title string
 --- @return string[]
-function M.command(prompt)
+function M.command(prompt, title)
 	local opts = config.options()
 	return {
 		"opencode",
@@ -42,6 +53,8 @@ function M.command(prompt)
 		opts.model,
 		"--variant",
 		opts.variant,
+		"--title",
+		title,
 		prompt,
 	}
 end
@@ -136,6 +149,14 @@ function M.show_response(command)
 
 		vim.api.nvim_buf_set_lines(response_bufnr, 0, -1, false, vim.split(text, "\n", { plain = true }))
 	end)
+end
+
+function M.ask_title(question)
+	return session_title("Ask", question)
+end
+
+function M.search_title(question)
+	return session_title("Search", question)
 end
 
 return M
