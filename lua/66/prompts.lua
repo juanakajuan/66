@@ -86,9 +86,9 @@ function M.edit(instruction, context)
 		context.selected,
 		"```",
 		"",
-		"Current file context:",
+		"Nearby file context:",
 		"```" .. (context.filetype or ""),
-		context.current_file,
+		context.edit_context,
 		"```",
 	}, "\n")
 end

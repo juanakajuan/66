@@ -9,6 +9,7 @@ local M = {}
 --- @field end_line integer 1-based last selected line.
 --- @field selected string Selected text prefixed with source line numbers.
 --- @field current_file string Whole current file with line numbers, or an omission notice when too large.
+--- @field edit_context string Nearby current-file lines around the selection for Edit Selection prompts.
 
 --- Normalize visual marks into zero-based buffer text coordinates.
 --- @param bufnr integer
@@ -76,6 +77,26 @@ local function current_file_context(bufnr)
 	return with_line_numbers(lines, 1)
 end
 
+--- Return nearby current-file context around a selected range.
+--- @param bufnr integer
+--- @param start_row integer zero-based first selected row.
+--- @param end_row integer zero-based last selected row.
+--- @return string
+local function edit_context(bufnr, start_row, end_row)
+	local opts = config.options()
+	local line_count = vim.api.nvim_buf_line_count(bufnr)
+	local context_lines = math.max(opts.edit_context_lines or 0, 0)
+	local selected_count = end_row - start_row + 1
+	local surrounding_lines = math.max(context_lines - selected_count, 0)
+	local before = math.floor(surrounding_lines / 2)
+	local after = surrounding_lines - before
+	local context_start = math.max(start_row - before, 0)
+	local context_end = math.min(end_row + after + 1, line_count)
+	local lines = vim.api.nvim_buf_get_lines(bufnr, context_start, context_end, false)
+
+	return with_line_numbers(lines, context_start + 1)
+end
+
 --- Capture the current visual selection and bounded file context.
 --- @return SelectionContext
 function M.selection()
@@ -98,6 +119,7 @@ function M.selection()
 		end_line = end_row + 1,
 		selected = with_line_numbers(selected, start_row + 1),
 		current_file = current_file_context(bufnr),
+		edit_context = edit_context(bufnr, start_row, end_row),
 	}
 end
 

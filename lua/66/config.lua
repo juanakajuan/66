@@ -5,6 +5,7 @@ local M = {}
 --- @field variant string opencode variant name.
 --- @field agent string opencode agent name.
 --- @field max_file_lines integer Maximum current-file lines sent as Selection Context.
+--- @field edit_context_lines integer Maximum nearby source lines sent as Edit Selection context.
 --- @field response_layout "right_split"|"bottom_split"|"float"|"tab" Response View placement.
 --- @field ask_keymap string|false Visual-mode Ask About Selection mapping, or false to disable.
 --- @field search_keymap string|false Normal-mode Project Search mapping, or false to disable.
@@ -16,6 +17,7 @@ local defaults = {
 	variant = "low",
 	agent = "build",
 	max_file_lines = 400,
+	edit_context_lines = 120,
 	response_layout = "bottom_split",
 	ask_keymap = "<leader>6a",
 	search_keymap = "<leader>6s",
