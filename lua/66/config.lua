@@ -8,6 +8,7 @@ local M = {}
 --- @field edit_context_lines integer Maximum nearby source lines sent as Edit Selection context.
 --- @field response_layout "right_split"|"bottom_split"|"float"|"tab" Response View placement.
 --- @field ask_keymap string|false Visual-mode Ask About Selection mapping, or false to disable.
+--- @field explain_keymap string|false Visual-mode Explain Selection preset mapping, or false to disable.
 --- @field search_keymap string|false Normal-mode Project Search mapping, or false to disable.
 --- @field history_keymap string|false Normal-mode Session History mapping, or false to disable.
 --- @field edit_keymap string|false Edit Selection mapping, or false to disable.
@@ -20,6 +21,7 @@ local defaults = {
 	edit_context_lines = 120,
 	response_layout = "bottom_split",
 	ask_keymap = "<leader>6a",
+	explain_keymap = "<leader>6x",
 	search_keymap = "<leader>6s",
 	history_keymap = "<leader>6h",
 	edit_keymap = "<leader>6e",

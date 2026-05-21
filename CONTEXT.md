@@ -8,6 +8,10 @@
 A read-only workflow where the user asks a question about visually selected code and receives an AI response.
 _Avoid_: edit selection, replacement workflow
 
+**Explain Selection**:
+A preset **Ask About Selection** where the question is supplied by 66 to explain the visually selected code without opening the prompt buffer.
+_Avoid_: separate edit workflow, customizable prompt template
+
 **Edit Selection**:
 A write workflow where the user selects code, gives an edit instruction, and allows the AI agent to change the selected block or immediately adjacent lines when the change naturally belongs there.
 _Avoid_: whole-file rewrite, broad refactor, unrelated file edits
@@ -48,6 +52,7 @@ _Avoid_: session mutation, external archive browser
 
 - An **Ask About Selection** uses exactly one **Selection Context**.
 - An **Ask About Selection** produces exactly one **Response View**.
+- An **Explain Selection** is an **Ask About Selection** preset.
 - An **Edit Selection** uses exactly one **Selection Context**.
 - An **Edit Selection** is constrained by one **Localized Edit Boundary**.
 - An **Edit Selection** produces source-file changes and one **Response View** summary.

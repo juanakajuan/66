@@ -15,6 +15,11 @@ function M.ask()
 	ask.run()
 end
 
+--- Explain the current visual selection without prompting for a question.
+function M.explain()
+	ask.explain()
+end
+
 --- Search the current project and open matching locations in quickfix.
 function M.search()
 	ui.capture_prompt(" 66 search ", "66 search", "Search66", function(question)
@@ -41,6 +46,10 @@ function M.setup(opts)
 		M.ask()
 	end, { desc = "Ask opencode about the visual selection", range = true })
 
+	vim.api.nvim_create_user_command("Explain66", function()
+		M.explain()
+	end, { desc = "Explain the visual selection with opencode", range = true })
+
 	vim.api.nvim_create_user_command("Search66", function()
 		M.search()
 	end, { desc = "Search the current project with opencode" })
@@ -58,6 +67,12 @@ function M.setup(opts)
 			vim.keymap.set("v", options.ask_keymap, function()
 				M.ask()
 			end, { desc = "66 ask about selection" })
+		end
+
+		if options.explain_keymap then
+			vim.keymap.set("v", options.explain_keymap, function()
+				M.explain()
+			end, { desc = "66 explain selection" })
 		end
 
 		if options.search_keymap then
