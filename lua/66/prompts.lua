@@ -55,4 +55,42 @@ function M.search(question)
 	}, "\n")
 end
 
+--- Build the Edit Selection prompt.
+--- @param instruction string
+--- @param context SelectionContext
+--- @return string
+function M.edit(instruction, context)
+	return table.concat({
+		"You are editing the selected code block for a Neovim user.",
+		"The selected code block is the edit target. Localize changes to that selection.",
+		"You may read the whole file or explore the codebase for context.",
+		"You may edit the selected lines and immediately adjacent lines when the requested change naturally belongs next to the selection, such as adding documentation, annotations, imports, or small setup/cleanup code.",
+		"Do not edit elsewhere unless the request cannot be completed safely without doing so.",
+		"If you must edit elsewhere, keep it minimal and explain why in your summary.",
+		"Do not make unrelated refactors.",
+		"After editing, summarize the localized change and any edits made outside the selection.",
+		"",
+		"Instruction:",
+		instruction,
+		"",
+		"File path:",
+		context.path ~= "" and context.path or "[No file path]",
+		"",
+		"Filetype:",
+		context.filetype ~= "" and context.filetype or "[No filetype]",
+		"",
+		string.format("Selected lines: %d-%d", context.start_line, context.end_line),
+		"",
+		"Selected code:",
+		"```" .. (context.filetype or ""),
+		context.selected,
+		"```",
+		"",
+		"Current file context:",
+		"```" .. (context.filetype or ""),
+		context.current_file,
+		"```",
+	}, "\n")
+end
+
 return M

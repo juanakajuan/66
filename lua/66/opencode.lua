@@ -32,7 +32,7 @@ local function strip_opencode_prologue(text)
 end
 
 --- Build an opencode session title that Session History can identify.
---- @param kind "Ask"|"Search"
+--- @param kind "Ask"|"Search"|"Edit"
 --- @param text string
 --- @return string
 local function session_title(kind, text)
@@ -168,6 +168,13 @@ end
 --- @return string
 function M.search_title(question)
 	return session_title("Search", question)
+end
+
+--- Build an Edit Selection session title.
+--- @param instruction string
+--- @return string
+function M.edit_title(instruction)
+	return session_title("Edit", instruction)
 end
 
 return M

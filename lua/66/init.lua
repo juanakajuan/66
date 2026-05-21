@@ -4,6 +4,7 @@ local ui = require("66.ui")
 local ask = require("66.ask")
 local search = require("66.search")
 local history = require("66.history")
+local edit = require("66.edit")
 
 local M = {}
 
@@ -26,6 +27,11 @@ function M.history()
 	history.run()
 end
 
+--- Ask opencode to edit code related to the current visual selection.
+function M.edit()
+	edit.run()
+end
+
 --- Configure the 66 prototype.
 --- @param opts? table Partial `SixtySixConfig` override table.
 function M.setup(opts)
@@ -42,6 +48,10 @@ function M.setup(opts)
 	vim.api.nvim_create_user_command("History66", function()
 		M.history()
 	end, { desc = "Open the session history for the current project" })
+
+	vim.api.nvim_create_user_command("Edit66", function()
+		M.edit()
+	end, { desc = "Have opencode edit the visual selection", range = true })
 
 	if not did_setup then
 		if options.ask_keymap then
@@ -60,6 +70,12 @@ function M.setup(opts)
 			vim.keymap.set("n", options.history_keymap, function()
 				M.history()
 			end, { desc = "66 open session history" })
+		end
+
+		if options.edit_keymap then
+			vim.keymap.set("v", options.edit_keymap, function()
+				M.edit()
+			end, { desc = "66 edit current selection" })
 		end
 	end
 
