@@ -50,7 +50,7 @@ local function format_time(ms)
 		return "unknown time"
 	end
 
-	return os.date("%Y-%m-%d %H:%M", math.floor(ms / 1000))
+	return vim.fn.strftime("%Y-%m-%d %H:%M", math.floor(ms / 1000))
 end
 
 --- Return true when the session was created by this plugin.

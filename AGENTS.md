@@ -1,3 +1,7 @@
+- Always use neovim provided functions.
+- This is not a standard lua project. Package resolution and all things related to lua and std should be ignored in favor of neovim and its utilities.
+
+
 ## Agent skills
 
 ### Issue tracker
