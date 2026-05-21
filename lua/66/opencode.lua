@@ -95,9 +95,14 @@ function M.run(command, on_complete)
 	)
 end
 
+--- @class OpenCodeResponseOpts
+--- @field on_complete? fun(result: vim.SystemCompleted, text: string)
+
 --- Run opencode and display output in a Response View.
 --- @param command string[]
-function M.show_response(command)
+--- @param opts? OpenCodeResponseOpts
+function M.show_response(command, opts)
+	opts = opts or {}
 	local frame = 1
 	local timer = assert(vim.uv.new_timer(), "failed to create response spinner timer")
 	local running = true
@@ -141,15 +146,19 @@ function M.show_response(command)
 	M.run(command, function(result, text)
 		stop_timer()
 
-		if not vim.api.nvim_buf_is_valid(response_bufnr) then
-			return
-		end
-
 		if result.code ~= 0 then
 			text = string.format("opencode exited with code %d\n\n%s", result.code, text)
 		end
 		if text == "" then
 			text = "opencode completed without output."
+		end
+
+		if opts.on_complete then
+			opts.on_complete(result, text)
+		end
+
+		if not vim.api.nvim_buf_is_valid(response_bufnr) then
+			return
 		end
 
 		vim.api.nvim_buf_set_lines(response_bufnr, 0, -1, false, vim.split(text, "\n", { plain = true }))
