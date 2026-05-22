@@ -168,9 +168,9 @@ end
 --- Export and open one selected opencode session.
 --- @param session OpencodeSession
 local function open_session(session)
-	local stop_spinner = ui.start_status_spinner("Loading session")
+	local stop_throbber = ui.start_status_throbber("Loading session")
 	run_command({ "opencode", "export", session.id }, function(result, text)
-		stop_spinner()
+		stop_throbber()
 		if result.code ~= 0 then
 			show_error("66 history error", result.code, text)
 			return
@@ -204,11 +204,11 @@ end
 
 --- Show opencode sessions for the current project and open a selected transcript.
 function M.run()
-	local stop_spinner = ui.start_status_spinner("Loading history")
+	local stop_throbber = ui.start_status_throbber("Loading history")
 	run_command(
 		{ "opencode", "session", "list", "--format", "json", "--max-count", tostring(MAX_SESSIONS) },
 		function(result, text)
-			stop_spinner()
+			stop_throbber()
 			if result.code ~= 0 then
 				show_error("66 history error", result.code, text)
 				return

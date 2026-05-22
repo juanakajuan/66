@@ -3,6 +3,7 @@ local ui = require("66.ui")
 
 local ask = require("66.ask")
 local search = require("66.search")
+local tutorial = require("66.tutorial")
 local history = require("66.history")
 local edit = require("66.edit")
 
@@ -24,6 +25,13 @@ end
 function M.search()
 	ui.capture_prompt(" 66 search ", "66 search", "Search66", function(question)
 		search.run(question)
+	end)
+end
+
+--- Create a read-only markdown tutorial about the current project.
+function M.tutorial()
+	ui.capture_prompt(" 66 tutorial ", "66 tutorial", "Tutorial66", function(question)
+		tutorial.run(question)
 	end)
 end
 
@@ -54,6 +62,10 @@ function M.setup(opts)
 		M.search()
 	end, { desc = "Search the current project with opencode" })
 
+	vim.api.nvim_create_user_command("Tutorial66", function()
+		M.tutorial()
+	end, { desc = "Create a project tutorial with opencode" })
+
 	vim.api.nvim_create_user_command("History66", function()
 		M.history()
 	end, { desc = "Open the session history for the current project" })
@@ -79,6 +91,12 @@ function M.setup(opts)
 			vim.keymap.set("n", options.search_keymap, function()
 				M.search()
 			end, { desc = "66 search project" })
+		end
+
+		if options.tutorial_keymap then
+			vim.keymap.set("n", options.tutorial_keymap, function()
+				M.tutorial()
+			end, { desc = "66 create project tutorial" })
 		end
 
 		if options.history_keymap then

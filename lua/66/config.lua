@@ -10,6 +10,7 @@ local M = {}
 --- @field ask_keymap string|false Visual-mode Ask About Selection mapping, or false to disable.
 --- @field explain_keymap string|false Visual-mode Explain Selection preset mapping, or false to disable.
 --- @field search_keymap string|false Normal-mode Project Search mapping, or false to disable.
+--- @field tutorial_keymap string|false Normal-mode Project Tutorial mapping, or false to disable.
 --- @field history_keymap string|false Normal-mode Session History mapping, or false to disable.
 --- @field edit_keymap string|false Edit Selection mapping, or false to disable.
 
@@ -23,6 +24,7 @@ local defaults = {
 	ask_keymap = "<leader>6a",
 	explain_keymap = "<leader>6x",
 	search_keymap = "<leader>6s",
+	tutorial_keymap = "<leader>6t",
 	history_keymap = "<leader>6h",
 	edit_keymap = "<leader>6e",
 }

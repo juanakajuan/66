@@ -43,11 +43,11 @@ local function start_implementing_status(bufnr, start_line, end_line)
 		local line_count = vim.api.nvim_buf_line_count(bufnr)
 		local top_row = math.max(0, math.min(start_line - 1, line_count - 1))
 		local bottom_row = math.max(0, math.min(end_line - 1, line_count - 1))
-		local text = ui.spinner_frames[frame] .. " Implementing"
+		local text = ui.throbber_frames[frame] .. " Implementing"
 
 		top_id = set_extmark(top_row, top_id, text, true)
 		bottom_id = set_extmark(bottom_row, bottom_id, text, false)
-		frame = frame % #ui.spinner_frames + 1
+		frame = frame % #ui.throbber_frames + 1
 		vim.defer_fn(render, 120)
 	end
 

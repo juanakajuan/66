@@ -32,7 +32,7 @@ local function strip_opencode_prologue(text)
 end
 
 --- Build an opencode session title that Session History can identify.
---- @param kind "Ask"|"Search"|"Edit"
+--- @param kind "Ask"|"Search"|"Edit"|"Tutorial"
 --- @param text string
 --- @return string
 local function session_title(kind, text)
@@ -104,7 +104,7 @@ end
 function M.show_response(command, opts)
 	opts = opts or {}
 	local frame = 1
-	local timer = assert(vim.uv.new_timer(), "failed to create response spinner timer")
+	local timer = assert(vim.uv.new_timer(), "failed to create response throbber timer")
 	local running = true
 
 	local function stop_timer()
@@ -118,7 +118,7 @@ function M.show_response(command, opts)
 	end
 
 	local response_bufnr = ui.open_scratch_response("66 response", {
-		ui.spinner_frames[frame] .. " Loading...",
+		ui.throbber_frames[frame] .. " Loading...",
 		"",
 		table.concat(vim.list_slice(command, 1, #command - 1), " "),
 	}, "markdown")
@@ -136,9 +136,9 @@ function M.show_response(command, opts)
 				return
 			end
 
-			frame = frame % #ui.spinner_frames + 1
+			frame = frame % #ui.throbber_frames + 1
 			vim.api.nvim_buf_set_lines(response_bufnr, 0, 1, false, {
-				ui.spinner_frames[frame] .. " Loading...",
+				ui.throbber_frames[frame] .. " Loading...",
 			})
 		end)
 	)
@@ -177,6 +177,13 @@ end
 --- @return string
 function M.search_title(question)
 	return session_title("Search", question)
+end
+
+--- Build a Project Tutorial session title.
+--- @param question string
+--- @return string
+function M.tutorial_title(question)
+	return session_title("Tutorial", question)
 end
 
 --- Build an Edit Selection session title.

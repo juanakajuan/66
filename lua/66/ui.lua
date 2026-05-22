@@ -2,8 +2,8 @@ local config = require("66.config")
 
 local M = {}
 
---- Animated glyphs used by Response View and status spinners.
-M.spinner_frames = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" }
+--- Animated glyphs used by Response View and status throbbers.
+M.throbber_frames = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" }
 
 --- Apply common scratch-buffer options.
 --- @param bufnr integer
@@ -141,10 +141,10 @@ function M.capture_prompt(title, name, label, on_submit)
 	vim.cmd("startinsert")
 end
 
---- Start a floating status spinner and return its stop callback.
+--- Start a floating status throbber and return its stop callback.
 --- @param label string
 --- @return fun()
-function M.start_status_spinner(label)
+function M.start_status_throbber(label)
 	local width = math.max(18, #label + 6)
 	local bufnr = vim.api.nvim_create_buf(false, true)
 	local winid = vim.api.nvim_open_win(bufnr, false, {
@@ -172,9 +172,9 @@ function M.start_status_spinner(label)
 			return
 		end
 
-		local text = string.format("%s %s", M.spinner_frames[frame], label)
+		local text = string.format("%s %s", M.throbber_frames[frame], label)
 		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { text })
-		frame = frame % #M.spinner_frames + 1
+		frame = frame % #M.throbber_frames + 1
 		vim.defer_fn(render, 120)
 	end
 

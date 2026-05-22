@@ -36,6 +36,18 @@ _Avoid_: replacement buffer, output file
 A read-only workflow where the user asks an AI to find relevant code locations across the project and receives a quickfix list.
 _Avoid_: edit workflow, replacement workflow, whole-project answer
 
+**Project Tutorial**:
+A read-only workflow where the user asks for learning material about the current Project and receives a markdown tutorial.
+_Avoid_: selected-code explanation, edit workflow, search result list
+
+**Tutorial Question**:
+The user-authored prompt for a Project Tutorial. It is sent with the current Project as the boundary and without Selection Context by default.
+_Avoid_: selected code, current file snapshot, whole-project prompt dump
+
+**Tutorial Output**:
+The valid markdown document produced by a Project Tutorial, with its first line serving as the tutorial title.
+_Avoid_: quickfix results, edit summary, transcript
+
 **Search Question**:
 The user-authored prompt for a Project Search. It is sent without Selection Context by default.
 _Avoid_: selected code, current file snapshot
@@ -59,6 +71,9 @@ _Avoid_: session mutation, external archive browser
 - A **Project Search** is bounded by one **Project**.
 - A **Project Search** uses exactly one **Search Question**.
 - A **Project Search** produces zero or more **Search Results** without modifying source files.
+- A **Project Tutorial** is bounded by one **Project**.
+- A **Project Tutorial** uses exactly one **Tutorial Question**.
+- A **Project Tutorial** produces exactly one **Tutorial Output** in a **Response View** without modifying source files.
 - A **Session History** is bounded by one **Project**.
 - A **Session History** opens a selected opencode session as a **Response View**.
 
@@ -70,6 +85,10 @@ _Avoid_: session mutation, external archive browser
 > **Dev:** "If I select a function and ask 66 to add docs, can it insert comments above the function?"
 > **Domain expert:** "Yes — **Edit Selection** may edit immediately adjacent lines when the change naturally belongs next to the selection."
 
+> **Dev:** "If I ask for a tutorial on how routing works, does 66 use my visual selection?"
+> **Domain expert:** "No — **Project Tutorial** is bounded by the current **Project** and uses a **Tutorial Question**, not **Selection Context**."
+
 ## Flagged ambiguities
 
 - "Context" can mean editor context or whole repository context — resolved: **Selection Context** is bounded and does not mean sending the whole codebase by default.
+- "Tutorial" can mean selected-code explanation or project learning material — resolved: **Project Tutorial** is project-level and read-only, while **Explain Selection** covers selected-code explanations.

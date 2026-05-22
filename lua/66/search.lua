@@ -88,9 +88,9 @@ end
 --- Run a Project Search and populate quickfix with parsed Search Results.
 --- @param question string
 function M.run(question)
-	local stop_spinner = ui.start_status_spinner("Searching")
+	local stop_throbber = ui.start_status_throbber("Searching")
 	opencode.run(opencode.command(prompts.search(question), opencode.search_title(question)), function(result, text)
-		stop_spinner()
+		stop_throbber()
 
 		if result.code ~= 0 then
 			show_search_error(result.code, text)
