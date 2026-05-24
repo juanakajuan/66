@@ -3,15 +3,85 @@ local ui = require("66.ui")
 
 local M = {}
 
+--- @param event table
+--- @return string?
+local function text_event_phase(event)
+  local part = event.part
+  if event.type ~= "text" or type(part) ~= "table" then
+    return nil
+  end
+
+  local metadata = part.metadata
+  if type(metadata) ~= "table" then
+    return nil
+  end
+
+  local openai = metadata.openai
+  if type(openai) ~= "table" then
+    return nil
+  end
+
+  return openai.phase
+end
+
+--- Parse opencode JSONL and return assistant text only.
+--- @param text string
+--- @return string?
+local function assistant_text_from_json(text)
+  local text_chunks = {}
+  local final_answer_chunks = {}
+
+  for _, line in ipairs(vim.split(text, "\n", { trimempty = true })) do
+    local ok, event = pcall(vim.json.decode, line)
+    if ok and type(event) == "table" and event.type == "text" and type(event.part) == "table" then
+      local part_text = event.part.text
+      if type(part_text) == "string" and part_text ~= "" then
+        local phase = text_event_phase(event)
+        if phase == "final_answer" then
+          table.insert(final_answer_chunks, part_text)
+        else
+          table.insert(text_chunks, part_text)
+        end
+      end
+    end
+  end
+
+  if #final_answer_chunks > 0 then
+    return table.concat(final_answer_chunks, "")
+  end
+  if #text_chunks > 0 then
+    return table.concat(text_chunks, "")
+  end
+
+  return nil
+end
+
 --- Drop opencode's captured status prologue from response text.
 --- @param text string
 --- @return string
 local function strip_opencode_prologue(text)
+  text = text:gsub("\27%[[%d;]*m", "")
+
   local lines = vim.split(text, "\n", { plain = true })
   local start = 1
 
+  for index, line in ipairs(lines) do
+    local trimmed = line:gsub("^%s+", "")
+    if trimmed:match("^[→✱]") then
+      start = index + 1
+    end
+  end
+
+  while lines[start] == "" do
+    start = start + 1
+  end
+
+  if start > 1 then
+    return table.concat(vim.list_slice(lines, start), "\n")
+  end
+
   local function is_ansi_reset_line(line)
-    return line:match("^%s*\27%[[%d;]*m%s*$") or line:match("^%s*%[[%d;]*m%s*$")
+    return line:match("^%s*%[[%d;]*m%s*$")
   end
 
   local function skip_ansi_reset_lines()
@@ -54,6 +124,8 @@ function M.command(prompt, title)
   return {
     "opencode",
     "run",
+    "--format",
+    "json",
     "--agent",
     opts.agent,
     "-m",
@@ -90,7 +162,7 @@ function M.run(command, on_complete)
       if text == "" then
         text = result.stdout or result.stderr or ""
       end
-      on_complete(result, strip_opencode_prologue(text))
+      on_complete(result, assistant_text_from_json(text) or strip_opencode_prologue(text))
     end)
   )
 end
