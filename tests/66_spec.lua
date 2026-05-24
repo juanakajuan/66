@@ -33,7 +33,6 @@ describe("66", function()
       ask_keymap = false,
       explain_keymap = false,
       search_keymap = false,
-      tutorial_keymap = false,
       history_keymap = false,
       edit_keymap = false,
     })
@@ -41,7 +40,6 @@ describe("66", function()
     assert.equals(2, vim.fn.exists(":Ask66"))
     assert.equals(2, vim.fn.exists(":Explain66"))
     assert.equals(2, vim.fn.exists(":Search66"))
-    assert.equals(2, vim.fn.exists(":Tutorial66"))
     assert.equals(2, vim.fn.exists(":History66"))
     assert.equals(2, vim.fn.exists(":Edit66"))
   end)
@@ -136,11 +134,14 @@ describe("66", function()
         end
       end)
       test_utils.patch(opencode, "run", function(_, on_complete)
-        on_complete({ code = 0 }, joined({
-          "/tmp/alpha.lua:12:3,2,first match",
-          "not a result",
-          "/tmp/beta.lua:4:1,1,second match",
-        }))
+        on_complete(
+          { code = 0 },
+          joined({
+            "/tmp/alpha.lua:12:3,2,first match",
+            "not a result",
+            "/tmp/beta.lua:4:1,1,second match",
+          })
+        )
       end)
       test_utils.patch(vim, "cmd", function(command)
         assert.equals("copen", command)

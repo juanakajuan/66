@@ -8,7 +8,6 @@
 - Explain a visual selection with a preset prompt.
 - Edit a visual selection with a localized edit boundary.
 - Search the current project and open results in quickfix.
-- Generate a markdown tutorial for the current project.
 - Browse opencode session history for the current project.
 
 ## Setup
@@ -23,7 +22,6 @@ require("66").setup()
 - `:Explain66`: explain the visual selection.
 - `:Edit66`: edit the visual selection.
 - `:Search66`: search the current project.
-- `:Tutorial66`: generate a project tutorial.
 - `:History66`: open session history.
 
 ## Testing

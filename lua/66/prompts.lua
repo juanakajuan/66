@@ -55,34 +55,6 @@ function M.search(question)
   }, "\n")
 end
 
---- Build the read-only Project Tutorial prompt.
---- @param question string
---- @param output_path string Absolute path where the agent must write Tutorial Output.
---- @return string
-function M.tutorial(question, output_path)
-  return table.concat({
-    "You are writing a read-only Project Tutorial for a Neovim user.",
-    "Use the current project as the boundary for your investigation.",
-    "You may inspect files in the project to answer the Tutorial Question.",
-    "Do not edit project files. Do not modify buffers.",
-    "Write the final tutorial to the Tutorial Output File and do not print it to stdout.",
-    "Do not include tool logs, progress updates, or commentary outside the Tutorial Output File.",
-    "The response format must be valid Markdown.",
-    "The first line of the response must be the tutorial title.",
-    "Write a practical tutorial that helps the user understand the requested topic in this project.",
-    "Reference concrete files, functions, commands, or workflows when useful.",
-    "",
-    "Project:",
-    vim.fn.getcwd(),
-    "",
-    "Tutorial Output File:",
-    output_path,
-    "",
-    "Tutorial Question:",
-    question,
-  }, "\n")
-end
-
 --- Build the Edit Selection prompt.
 --- @param instruction string
 --- @param context SelectionContext
