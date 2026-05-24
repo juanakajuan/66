@@ -67,6 +67,19 @@ local function assistant_text_from_json(text)
   return nil
 end
 
+--- Return captured streamed output, falling back to process output fields.
+--- @param output string[] chunks collected from process output callbacks
+--- @param result vim.SystemCompleted
+--- @return string
+local function combined_output(output, result)
+  local text = table.concat(output, "")
+  if text ~= "" then
+    return text
+  end
+
+  return result.stdout or result.stderr or ""
+end
+
 --- Drop opencode's captured status prologue from response text.
 --- @param text string
 --- @return string
@@ -112,12 +125,35 @@ local function strip_opencode_prologue(text)
   return table.concat(vim.list_slice(lines, start), "\n")
 end
 
+--- Return user-readable assistant output from opencode's captured text.
+--- @param text string
+--- @return string
+local function readable_output(text)
+  return assistant_text_from_json(text) or strip_opencode_prologue(text)
+end
+
+--- Format opencode's completed process result for display.
+--- @param result vim.SystemCompleted
+--- @param text string
+--- @return string
+local function response_output(result, text)
+  if result.code ~= 0 then
+    return string.format("opencode exited with code %d\n\n%s", result.code, text)
+  end
+
+  if text == "" then
+    return "opencode completed without output."
+  end
+
+  return text
+end
+
 --- Build an opencode session title that Session History can identify.
 --- @param kind "Ask"|"Search"|"Edit"
 --- @param text string
 --- @return string
 local function session_title(kind, text)
-  local title = text:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+  local title = vim.trim(text:gsub("%s+", " "))
 
   if #title > 80 then
     title = title:sub(1, 77) .. "..."
@@ -224,11 +260,8 @@ function M.run(command, on_complete, opts)
     vim.schedule_wrap(function(result)
       unregister_request(request)
 
-      local text = table.concat(output, "")
-      if text == "" then
-        text = result.stdout or result.stderr or ""
-      end
-      on_complete(result, assistant_text_from_json(text) or strip_opencode_prologue(text), {
+      local text = combined_output(output, result)
+      on_complete(result, readable_output(text), {
         canceled = request.canceled,
       })
     end)
@@ -290,12 +323,7 @@ function M.show_response(command, opts)
       return
     end
 
-    if result.code ~= 0 then
-      text = string.format("opencode exited with code %d\n\n%s", result.code, text)
-    end
-    if text == "" then
-      text = "opencode completed without output."
-    end
+    text = response_output(result, text)
 
     if opts.on_complete then
       opts.on_complete(result, text)

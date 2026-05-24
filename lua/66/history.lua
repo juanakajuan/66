@@ -117,21 +117,21 @@ end
 local function run_command(command, on_complete)
   local stdout = {}
   local stderr = {}
+  local function append_output(output)
+    return function(_, data)
+      if data and data ~= "" then
+        table.insert(output, data)
+      end
+    end
+  end
+
   vim.system(
     command,
     {
       text = true,
       cwd = vim.fn.getcwd(),
-      stdout = function(_, data)
-        if data and data ~= "" then
-          table.insert(stdout, data)
-        end
-      end,
-      stderr = function(_, data)
-        if data and data ~= "" then
-          table.insert(stderr, data)
-        end
-      end,
+      stdout = append_output(stdout),
+      stderr = append_output(stderr),
     },
     vim.schedule_wrap(function(result)
       local text = table.concat(stdout, "")

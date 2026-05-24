@@ -11,6 +11,49 @@ local M = {}
 
 local did_setup = false
 
+local commands = {
+  {
+    name = "Ask66",
+    method = "ask",
+    opts = { desc = "Ask opencode about the visual selection", range = true },
+  },
+  {
+    name = "Explain66",
+    method = "explain",
+    opts = { desc = "Explain the visual selection with opencode", range = true },
+  },
+  {
+    name = "Search66",
+    method = "search",
+    opts = { desc = "Search the current project with opencode" },
+  },
+  {
+    name = "History66",
+    method = "history",
+    opts = { desc = "Open the session history for the current project" },
+  },
+  {
+    name = "Edit66",
+    method = "edit",
+    opts = { desc = "Have opencode edit the visual selection", range = true },
+  },
+  { name = "Cancel66", method = "cancel", opts = { desc = "Cancel the active opencode request" } },
+}
+
+local keymaps = {
+  { option = "ask_keymap", mode = "v", method = "ask", desc = "66 ask about selection" },
+  { option = "explain_keymap", mode = "v", method = "explain", desc = "66 explain selection" },
+  { option = "search_keymap", mode = "n", method = "search", desc = "66 search project" },
+  { option = "history_keymap", mode = "n", method = "history", desc = "66 open session history" },
+  { option = "edit_keymap", mode = "v", method = "edit", desc = "66 edit current selection" },
+  {
+    option = "cancel_keymap",
+    mode = "n",
+    method = "cancel",
+    desc = "66 cancel the current opencode request",
+  },
+}
+
 --- Ask opencode about the current visual selection without editing source buffers.
 function M.ask()
   ask.run()
@@ -48,65 +91,21 @@ end
 function M.setup(opts)
   local options = config.setup(opts)
 
-  vim.api.nvim_create_user_command("Ask66", function()
-    M.ask()
-  end, { desc = "Ask opencode about the visual selection", range = true })
-
-  vim.api.nvim_create_user_command("Explain66", function()
-    M.explain()
-  end, { desc = "Explain the visual selection with opencode", range = true })
-
-  vim.api.nvim_create_user_command("Search66", function()
-    M.search()
-  end, { desc = "Search the current project with opencode" })
-
-  vim.api.nvim_create_user_command("History66", function()
-    M.history()
-  end, { desc = "Open the session history for the current project" })
-
-  vim.api.nvim_create_user_command("Edit66", function()
-    M.edit()
-  end, { desc = "Have opencode edit the visual selection", range = true })
-
-  vim.api.nvim_create_user_command("Cancel66", function()
-    M.cancel()
-  end, { desc = "Cancel the active opencode request" })
+  for _, command in ipairs(commands) do
+    vim.api.nvim_create_user_command(command.name, function()
+      M[command.method]()
+    end, command.opts)
+  end
 
   if not did_setup then
-    if options.ask_keymap then
-      vim.keymap.set("v", options.ask_keymap, function()
-        M.ask()
-      end, { desc = "66 ask about selection" })
-    end
+    for _, keymap in ipairs(keymaps) do
+      local left_hand_side = options[keymap.option]
 
-    if options.explain_keymap then
-      vim.keymap.set("v", options.explain_keymap, function()
-        M.explain()
-      end, { desc = "66 explain selection" })
-    end
-
-    if options.search_keymap then
-      vim.keymap.set("n", options.search_keymap, function()
-        M.search()
-      end, { desc = "66 search project" })
-    end
-
-    if options.history_keymap then
-      vim.keymap.set("n", options.history_keymap, function()
-        M.history()
-      end, { desc = "66 open session history" })
-    end
-
-    if options.edit_keymap then
-      vim.keymap.set("v", options.edit_keymap, function()
-        M.edit()
-      end, { desc = "66 edit current selection" })
-    end
-
-    if options.cancel_keymap then
-      vim.keymap.set("n", options.cancel_keymap, function()
-        M.cancel()
-      end, { desc = "66 cancel the current opencode request" })
+      if left_hand_side then
+        vim.keymap.set(keymap.mode, left_hand_side, function()
+          M[keymap.method]()
+        end, { desc = keymap.desc })
+      end
     end
   end
 

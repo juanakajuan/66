@@ -42,18 +42,6 @@ local function clear_edit_range(bufnr, tracker)
   vim.api.nvim_buf_del_extmark(bufnr, range_namespace, tracker.end_id)
 end
 
---- @param items string[]
---- @param start_index integer zero-based inclusive
---- @param end_index integer zero-based exclusive
---- @return string[]
-local function slice(items, start_index, end_index)
-  local result = {}
-  for index = start_index + 1, end_index do
-    result[#result + 1] = items[index]
-  end
-  return result
-end
-
 --- Find the minimal changed line range between the original and edited file.
 --- @param before string[]
 --- @param after string[]
@@ -107,58 +95,6 @@ local function current_apply_range(bufnr, tracker, selection, old_start, old_end
     math.max(0, math.min(end_row + old_end - selection_end, line_count))
 end
 
---- Show an inline Implementing status around the selected range.
---- @param bufnr integer
---- @param start_line integer 1-based first selected line.
---- @param end_line integer 1-based last selected line.
---- @return fun()
-local function start_implementing_status(bufnr, start_line, end_line)
-  local running = true
-  local frame = 1
-  local top_id
-  local bottom_id
-
-  local function clear()
-    if vim.api.nvim_buf_is_valid(bufnr) then
-      vim.api.nvim_buf_clear_namespace(bufnr, status_namespace, 0, -1)
-    end
-  end
-
-  local function set_extmark(row, id, line, above)
-    local opts = {
-      virt_lines = { { { line, "Comment" } } },
-      virt_lines_above = above,
-    }
-    if id then
-      opts.id = id
-    end
-    return vim.api.nvim_buf_set_extmark(bufnr, status_namespace, row, 0, opts)
-  end
-
-  local function render()
-    if not running or not vim.api.nvim_buf_is_valid(bufnr) then
-      return
-    end
-
-    local line_count = vim.api.nvim_buf_line_count(bufnr)
-    local top_row = math.max(0, math.min(start_line - 1, line_count - 1))
-    local bottom_row = math.max(0, math.min(end_line - 1, line_count - 1))
-    local text = ui.throbber_frames[frame] .. " Implementing"
-
-    top_id = set_extmark(top_row, top_id, text, true)
-    bottom_id = set_extmark(bottom_row, bottom_id, text, false)
-    frame = frame % #ui.throbber_frames + 1
-    vim.defer_fn(render, 120)
-  end
-
-  render()
-
-  return function()
-    running = false
-    clear()
-  end
-end
-
 --- Apply the source-file edit back into the live buffer without reloading it.
 --- @param source_bufnr integer
 --- @param selection SelectionContext
@@ -183,7 +119,7 @@ local function apply_changed_source(source_bufnr, selection, tracker, original_l
       start_row,
       end_row,
       false,
-      slice(edited_lines, new_start, new_end)
+      vim.list_slice(edited_lines, new_start + 1, new_end)
     )
     vim.api.nvim_buf_call(source_bufnr, function()
       vim.cmd("silent noautocmd write!")
@@ -217,8 +153,13 @@ function M.run()
   ui.capture_prompt(" 66 edit ", "66 edit", "Edit66", function(instruction)
     local original_lines = vim.api.nvim_buf_get_lines(source_bufnr, 0, -1, false)
     local tracker = track_edit_range(source_bufnr, selection.start_line, selection.end_line)
-    local stop_status =
-      start_implementing_status(source_bufnr, selection.start_line, selection.end_line)
+    local stop_status = ui.start_inline_status(
+      source_bufnr,
+      status_namespace,
+      selection.start_line,
+      selection.end_line,
+      "Implementing"
+    )
     local command =
       opencode.command(prompts.edit(instruction, selection), opencode.edit_title(instruction))
 
