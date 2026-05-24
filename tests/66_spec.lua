@@ -35,6 +35,7 @@ describe("66", function()
       search_keymap = false,
       history_keymap = false,
       edit_keymap = false,
+      cancel_keymap = false,
     })
 
     assert.equals(2, vim.fn.exists(":Ask66"))
@@ -42,6 +43,7 @@ describe("66", function()
     assert.equals(2, vim.fn.exists(":Search66"))
     assert.equals(2, vim.fn.exists(":History66"))
     assert.equals(2, vim.fn.exists(":Edit66"))
+    assert.equals(2, vim.fn.exists(":Cancel66"))
   end)
 
   describe("Selection Context", function()
@@ -116,6 +118,202 @@ describe("66", function()
 
       assert.is_false(ok)
       assert.equals("missing visual selection", err)
+    end)
+  end)
+
+  describe("Ask Selection", function()
+    it("shows Asking status until response completes, then opens response", function()
+      local ask = require("66.ask")
+      local opencode = require("66.opencode")
+      local ui = require("66.ui")
+      local bufnr = test_utils.create_buffer({
+        "local value = old()",
+        "return value",
+      }, "lua")
+      local complete
+      local response
+
+      patch_selection(1, 1, 1, 1, "V")
+      test_utils.patch(ui, "capture_prompt", function(title, name, label, on_submit)
+        assert.equals(" 66 ask ", title)
+        assert.equals("66 ask", name)
+        assert.equals("Ask66", label)
+        on_submit("What does this do?")
+      end)
+      test_utils.patch(opencode, "run", function(_, on_complete)
+        complete = on_complete
+      end)
+      test_utils.patch(ui, "open_scratch_response", function(name, lines, filetype)
+        response = { name = name, lines = lines, filetype = filetype }
+      end)
+
+      ask.run()
+
+      local namespace = vim.api.nvim_get_namespaces()["66_ask_status"]
+      local marks = vim.api.nvim_buf_get_extmarks(bufnr, namespace, 0, -1, { details = true })
+      assert.equals(2, #marks)
+      assert.equals("⣾ Asking", marks[1][4].virt_lines[1][1][1])
+      assert.is_nil(response)
+
+      complete({ code = 0 }, "The answer")
+
+      marks = vim.api.nvim_buf_get_extmarks(bufnr, namespace, 0, -1, {})
+      assert.equals(0, #marks)
+      assert.equals("66 response", response.name)
+      assert.equals("markdown", response.filetype)
+      assert.same({ "The answer" }, response.lines)
+    end)
+  end)
+
+  describe("OpenCode", function()
+    it("requests JSON output from opencode commands", function()
+      local opencode = require("66.opencode")
+
+      local command = opencode.command("question", "title")
+
+      assert.same({
+        "opencode",
+        "run",
+        "--format",
+        "json",
+        "--agent",
+        "build",
+        "-m",
+        "openai/gpt-5.5",
+        "--variant",
+        "low",
+        "--title",
+        "title",
+        "question",
+      }, command)
+    end)
+
+    it("returns final answer text from opencode part events", function()
+      local opencode = require("66.opencode")
+      local completed_text
+
+      test_utils.patch(vim, "system", function(_, opts, on_complete)
+        opts.stdout(
+          nil,
+          joined({
+            vim.json.encode({
+              type = "text",
+              part = {
+                type = "text",
+                text = "I’ll inspect nearby modules first.",
+                metadata = { openai = { phase = "commentary" } },
+              },
+            }),
+            vim.json.encode({
+              type = "tool_use",
+              part = { type = "tool", tool = "grep", state = { output = "Found 19 matches" } },
+            }),
+            vim.json.encode({
+              type = "text",
+              part = {
+                type = "text",
+                text = "This is the actual answer.",
+                metadata = { openai = { phase = "final_answer" } },
+              },
+            }),
+          })
+        )
+        on_complete({ code = 0 })
+      end)
+
+      opencode.run({ "opencode", "run", "question" }, function(_, text)
+        completed_text = text
+      end)
+      test_utils.next_frame()
+
+      assert.equals("This is the actual answer.", completed_text)
+    end)
+
+    it("falls back to stripping formatted progress transcript", function()
+      local opencode = require("66.opencode")
+      local completed_text
+
+      test_utils.patch(vim, "system", function(_, opts, on_complete)
+        opts.stdout(
+          nil,
+          joined({
+            "\27[0m→  \27[0mSkill \"vim\"",
+            "I’ll inspect nearby modules first.",
+            "\27[0m✱  \27[0mGlob \"lua/66/*.lua\" \27[90m in . · 11 matches \27[0m",
+            "\27[0m→  \27[0mRead lua/66/opencode.lua \27[90m [offset=1, limit=220] \27[0m",
+            "This is the actual answer.",
+          })
+        )
+        on_complete({ code = 0 })
+      end)
+
+      opencode.run({ "opencode", "run", "question" }, function(_, text)
+        completed_text = text
+      end)
+      test_utils.next_frame()
+
+      assert.equals("This is the actual answer.", completed_text)
+    end)
+
+    it("cancels the newest active request with TERM", function()
+      local opencode = require("66.opencode")
+      local completions = {}
+      local killed = {}
+      local cancel_count = 0
+      local notifications = {}
+      local states = {}
+
+      test_utils.patch(vim, "system", function(_, _, on_complete)
+        local index = #completions + 1
+        completions[index] = on_complete
+        return {
+          kill = function(_, signal)
+            killed[index] = signal
+          end,
+        }
+      end)
+      test_utils.patch(vim, "notify", function(message, level)
+        table.insert(notifications, { message = message, level = level })
+      end)
+
+      opencode.run({ "opencode", "run", "first" }, function(_, _, state)
+        states[1] = state
+      end)
+      opencode.run({ "opencode", "run", "second" }, function(_, _, state)
+        states[2] = state
+      end, {
+        on_cancel = function()
+          cancel_count = cancel_count + 1
+        end,
+      })
+
+      opencode.cancel_active()
+      completions[2]({ code = 143 })
+      test_utils.next_frame()
+
+      assert.is_nil(killed[1])
+      assert.equals(vim.uv.constants.SIGTERM, killed[2])
+      assert.equals(1, cancel_count)
+      assert.same({ canceled = true }, states[2])
+      assert.equals("Canceled 66 request", notifications[1].message)
+      assert.equals(vim.log.levels.INFO, notifications[1].level)
+
+      completions[1]({ code = 0 })
+      test_utils.next_frame()
+    end)
+
+    it("notifies when there is no active request to cancel", function()
+      local cancel = require("66.cancel")
+      local notification
+
+      test_utils.patch(vim, "notify", function(message, level)
+        notification = { message = message, level = level }
+      end)
+
+      cancel.run()
+
+      assert.equals("No active 66 request to cancel", notification.message)
+      assert.equals(vim.log.levels.INFO, notification.level)
     end)
   end)
 
@@ -229,7 +427,7 @@ describe("66", function()
   end)
 
   describe("Edit Selection", function()
-    it("runs opencode with the selected context and refreshes buffers", function()
+    it("runs opencode with the selected context and clears status", function()
       local edit = require("66.edit")
       local opencode = require("66.opencode")
       local ui = require("66.ui")
@@ -238,7 +436,6 @@ describe("66", function()
         "return value",
       }, "lua")
       local captured_command
-      local commands = {}
 
       patch_selection(1, 1, 1, 1, "V")
       test_utils.patch(ui, "capture_prompt", function(title, name, label, on_submit)
@@ -250,9 +447,6 @@ describe("66", function()
       test_utils.patch(opencode, "run", function(command, on_complete)
         captured_command = command
         on_complete({ code = 0 }, "changed")
-      end)
-      test_utils.patch(vim, "cmd", function(command)
-        table.insert(commands, command)
       end)
 
       edit.run()
@@ -266,7 +460,47 @@ describe("66", function()
       assert.is_true(prompt:find("Selected lines: 1-1", 1, true) ~= nil)
       assert.is_true(prompt:find("1: local value = old()", 1, true) ~= nil)
       assert.equals(0, #marks)
-      assert.is_true(vim.tbl_contains(commands, "checktime"))
+    end)
+
+    it("applies opencode edits in-place without reloading the live buffer", function()
+      local edit = require("66.edit")
+      local opencode = require("66.opencode")
+      local ui = require("66.ui")
+      local bufnr = test_utils.create_buffer({
+        "local value = old()",
+        "return value",
+      }, "lua")
+      local commands = {}
+
+      vim.api.nvim_buf_set_name(bufnr, "/tmp/edit66-in-place.lua")
+      patch_selection(1, 1, 1, 1, "V")
+      test_utils.patch(ui, "capture_prompt", function(_, _, _, on_submit)
+        on_submit("Use new_value()")
+      end)
+      test_utils.patch(opencode, "run", function(_, on_complete)
+        vim.api.nvim_buf_set_lines(bufnr, 1, 2, false, { "return other" })
+        on_complete({ code = 0 }, "changed")
+      end)
+      test_utils.patch(vim.fn, "readfile", function(path)
+        assert.equals("/tmp/edit66-in-place.lua", path)
+        return {
+          "local value = new_value()",
+          "return value",
+        }
+      end)
+      test_utils.patch(vim, "cmd", function(command)
+        table.insert(commands, command)
+        assert.is_nil(command:find("checktime", 1, true))
+        assert.is_nil(command:find("edit!", 1, true))
+      end)
+
+      edit.run()
+
+      assert.same({
+        "local value = new_value()",
+        "return other",
+      }, test_utils.buffer_lines(bufnr))
+      assert.same({ "silent noautocmd write!" }, commands)
     end)
 
     it("opens an error response when opencode fails", function()

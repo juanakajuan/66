@@ -5,6 +5,7 @@ local ask = require("66.ask")
 local search = require("66.search")
 local history = require("66.history")
 local edit = require("66.edit")
+local cancel = require("66.cancel")
 
 local M = {}
 
@@ -37,6 +38,11 @@ function M.edit()
   edit.run()
 end
 
+--- Cancel the active opencode request.
+function M.cancel()
+  cancel.run()
+end
+
 --- Configure the 66 prototype.
 --- @param opts? table Partial `SixtySixConfig` override table.
 function M.setup(opts)
@@ -61,6 +67,10 @@ function M.setup(opts)
   vim.api.nvim_create_user_command("Edit66", function()
     M.edit()
   end, { desc = "Have opencode edit the visual selection", range = true })
+
+  vim.api.nvim_create_user_command("Cancel66", function()
+    M.cancel()
+  end, { desc = "Cancel the active opencode request" })
 
   if not did_setup then
     if options.ask_keymap then
@@ -91,6 +101,12 @@ function M.setup(opts)
       vim.keymap.set("v", options.edit_keymap, function()
         M.edit()
       end, { desc = "66 edit current selection" })
+    end
+
+    if options.cancel_keymap then
+      vim.keymap.set("n", options.cancel_keymap, function()
+        M.cancel()
+      end, { desc = "66 cancel the current opencode request" })
     end
   end
 

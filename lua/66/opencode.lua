@@ -3,6 +3,17 @@ local ui = require("66.ui")
 
 local M = {}
 
+--- @class ActiveRequest
+--- @field id integer
+--- @field handle vim.SystemObj?
+--- @field canceled boolean
+--- @field finished boolean
+--- @field on_cancel? fun()
+
+local active_requests = {}
+local next_request_id = 0
+local SIGTERM = vim.uv.constants.SIGTERM
+
 --- @param event table
 --- @return string?
 local function text_event_phase(event)
@@ -115,6 +126,51 @@ local function session_title(kind, text)
   return string.format("[66] %s: %s", kind, title)
 end
 
+local function next_id()
+  next_request_id = next_request_id + 1
+  return next_request_id
+end
+
+--- @param handle vim.SystemObj?
+--- @param opts? OpenCodeRunOpts
+--- @return ActiveRequest
+local function register_request(handle, opts)
+  opts = opts or {}
+
+  local request = {
+    id = next_id(),
+    handle = handle,
+    canceled = false,
+    finished = false,
+    on_cancel = opts.on_cancel,
+  }
+
+  table.insert(active_requests, request)
+  return request
+end
+
+--- @param request ActiveRequest
+local function unregister_request(request)
+  request.finished = true
+
+  for index, active_request in ipairs(active_requests) do
+    if active_request == request then
+      table.remove(active_requests, index)
+      return
+    end
+  end
+end
+
+--- @return ActiveRequest?
+local function newest_active_request()
+  for index = #active_requests, 1, -1 do
+    local request = active_requests[index]
+    if not request.finished and not request.canceled then
+      return request
+    end
+  end
+end
+
 --- Build an opencode command for the active config.
 --- @param prompt string
 --- @param title string
@@ -138,10 +194,17 @@ function M.command(prompt, title)
   }
 end
 
+--- @class OpenCodeRunState
+--- @field canceled boolean
+
+--- @class OpenCodeRunOpts
+--- @field on_cancel? fun()
+
 --- Run opencode and return combined stdout/stderr to the callback.
 --- @param command string[]
---- @param on_complete fun(result: vim.SystemCompleted, text: string)
-function M.run(command, on_complete)
+--- @param on_complete fun(result: vim.SystemCompleted, text: string, state: OpenCodeRunState)
+--- @param opts? OpenCodeRunOpts
+function M.run(command, on_complete, opts)
   local output = {}
   local function append_output(_, data)
     if data and data ~= "" then
@@ -149,7 +212,8 @@ function M.run(command, on_complete)
     end
   end
 
-  vim.system(
+  local request = register_request(nil, opts)
+  request.handle = vim.system(
     command,
     {
       text = true,
@@ -158,11 +222,15 @@ function M.run(command, on_complete)
       stderr = append_output,
     },
     vim.schedule_wrap(function(result)
+      unregister_request(request)
+
       local text = table.concat(output, "")
       if text == "" then
         text = result.stdout or result.stderr or ""
       end
-      on_complete(result, assistant_text_from_json(text) or strip_opencode_prologue(text))
+      on_complete(result, assistant_text_from_json(text) or strip_opencode_prologue(text), {
+        canceled = request.canceled,
+      })
     end)
   )
 end
@@ -215,8 +283,12 @@ function M.show_response(command, opts)
     end)
   )
 
-  M.run(command, function(result, text)
+  M.run(command, function(result, text, state)
     stop_timer()
+
+    if state and state.canceled then
+      return
+    end
 
     if result.code ~= 0 then
       text = string.format("opencode exited with code %d\n\n%s", result.code, text)
@@ -262,6 +334,23 @@ end
 --- @return string
 function M.edit_title(instruction)
   return session_title("Edit", instruction)
+end
+
+function M.cancel_active()
+  local request = newest_active_request()
+  if not request then
+    vim.notify("No active 66 request to cancel", vim.log.levels.INFO)
+    return
+  end
+
+  request.canceled = true
+  if request.on_cancel then
+    request.on_cancel()
+  end
+  if request.handle then
+    request.handle:kill(SIGTERM)
+  end
+  vim.notify("Canceled 66 request", vim.log.levels.INFO)
 end
 
 return M

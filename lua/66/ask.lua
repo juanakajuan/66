@@ -67,8 +67,12 @@ local function run_question(source_bufnr, selection, question)
   local stop_status = start_asking_status(source_bufnr, selection.start_line, selection.end_line)
   local command = opencode.command(prompts.ask(question, selection), opencode.ask_title(question))
 
-  opencode.run(command, function(result, text)
+  opencode.run(command, function(result, text, state)
     stop_status()
+
+    if state and state.canceled then
+      return
+    end
 
     if result.code ~= 0 then
       text = string.format("opencode exited with code %d\n\n%s", result.code, text)
@@ -78,7 +82,9 @@ local function run_question(source_bufnr, selection, question)
     end
 
     ui.open_scratch_response("66 response", vim.split(text, "\n", { plain = true }), "markdown")
-  end)
+  end, {
+    on_cancel = stop_status,
+  })
 end
 
 --- Ask opencode about the current visual selection with a provided question.

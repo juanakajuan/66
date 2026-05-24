@@ -12,6 +12,7 @@ local M = {}
 --- @field search_keymap string|false Normal-mode Project Search mapping, or false to disable.
 --- @field history_keymap string|false Normal-mode Session History mapping, or false to disable.
 --- @field edit_keymap string|false Edit Selection mapping, or false to disable.
+--- @field cancel_keymap string|false Cancel the active request mapping, or false to disable.
 
 local defaults = {
   model = "openai/gpt-5.5",
@@ -25,7 +26,7 @@ local defaults = {
   search_keymap = "<leader>6s",
   history_keymap = "<leader>6h",
   edit_keymap = "<leader>6e",
-  stop_keymap = "<leader>6q",
+  cancel_keymap = "<leader>6c",
 }
 
 local response_layouts = {

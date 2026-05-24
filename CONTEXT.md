@@ -48,6 +48,14 @@ _Avoid_: prose-only answer, generated patch
 A read-only workflow where the user lists prior opencode sessions for the current Project and opens a transcript in a Response View.
 _Avoid_: session mutation, external archive browser
 
+**Active Request**:
+A currently running opencode process that was launched by an AI-generation workflow in the current Neovim instance.
+_Avoid_: external opencode process, historical session, session history load
+
+**Cancel Active Request**:
+A workflow where the user terminates an Active Request without producing a Response View, rolling back source-file changes, or deleting opencode session history.
+_Avoid_: stop command, undo edit, delete session
+
 ## Relationships
 
 - An **Ask About Selection** uses exactly one **Selection Context**.
@@ -61,6 +69,11 @@ _Avoid_: session mutation, external archive browser
 - A **Project Search** produces zero or more **Search Results** without modifying source files.
 - A **Session History** is bounded by one **Project**.
 - A **Session History** opens a selected opencode session as a **Response View**.
+- An **Active Request** belongs to exactly one current Neovim instance.
+- **Ask About Selection**, **Explain Selection**, **Edit Selection**, and **Project Search** can create an **Active Request**.
+- **Session History** does not create an **Active Request**.
+- Multiple **Active Requests** can run concurrently.
+- **Cancel Active Request** targets the most recently started still-running **Active Request**.
 
 ## Example dialogue
 
