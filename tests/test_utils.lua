@@ -14,6 +14,28 @@ function M.next_frame()
   end)
 end
 
+function M.joined(lines)
+  return table.concat(lines, "\n")
+end
+
+function M.patch_selection(start_line, start_col, end_line, end_col, mode)
+  M.patch(vim.fn, "mode", function()
+    return "n"
+  end)
+  M.patch(vim.fn, "visualmode", function()
+    return mode or "v"
+  end)
+  M.patch(vim.fn, "getpos", function(mark)
+    if mark == "'<" then
+      return { 0, start_line, start_col, 0 }
+    end
+    if mark == "'>" then
+      return { 0, end_line, end_col, 0 }
+    end
+    error("unexpected mark: " .. mark)
+  end)
+end
+
 function M.clean_buffers()
   for _, bufnr in ipairs(M.created_buffers) do
     if vim.api.nvim_buf_is_valid(bufnr) then

@@ -1,7 +1,7 @@
 local version = vim.version()
 
 local function line(text)
-	vim.api.nvim_out_write(text .. "\n")
+	vim.api.nvim_echo({ { text } }, false, {})
 end
 
 line("# Active Neovim API Reference")

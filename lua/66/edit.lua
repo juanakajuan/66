@@ -75,6 +75,144 @@ local function changed_range(before, after)
   return old_start, old_end, new_start, new_end
 end
 
+--- @class EditChangeHunk
+--- @field old_start integer vim.diff old start index, 1-based except 0 for insertions at file start.
+--- @field old_count integer
+--- @field new_start integer vim.diff new start index, 1-based except 0 for deletions at file start.
+--- @field new_count integer
+
+--- Find changed line hunks between the original and edited file.
+--- @param before string[]
+--- @param after string[]
+--- @return EditChangeHunk[]
+local function changed_hunks(before, after)
+  local hunks = vim.text.diff(table.concat(before, "\n"), table.concat(after, "\n"), {
+    result_type = "indices",
+  })
+  if type(hunks) ~= "table" then
+    return {}
+  end
+
+  local changes = {}
+
+  for _, hunk in ipairs(hunks) do
+    table.insert(changes, {
+      old_start = hunk[1],
+      old_count = hunk[2],
+      new_start = hunk[3],
+      new_count = hunk[4],
+    })
+  end
+
+  return changes
+end
+
+--- @param hunk EditChangeHunk
+--- @param selection SelectionContext
+--- @return boolean
+local function hunk_is_outside_selection(hunk, selection)
+  if hunk.old_count == 0 then
+    return hunk.old_start < selection.start_line or hunk.old_start >= selection.end_line
+  end
+
+  local old_end = hunk.old_start + hunk.old_count - 1
+  return hunk.old_start < selection.start_line or old_end > selection.end_line
+end
+
+--- @param selection SelectionContext
+--- @return string
+local function outside_changes_title(selection)
+  return string.format(
+    "66 Edit: outside selected lines %d-%d",
+    selection.start_line,
+    selection.end_line
+  )
+end
+
+--- @param items table[]
+--- @param selection SelectionContext
+--- @param line_count integer
+--- @param lnum integer
+--- @param count integer
+local function add_outside_change_item(items, selection, line_count, lnum, count)
+  local clamped_lnum = math.min(math.max(lnum, 1), line_count)
+  table.insert(items, {
+    filename = selection.path,
+    lnum = clamped_lnum,
+    col = 1,
+    end_lnum = count > 0 and math.min(clamped_lnum + count - 1, line_count) or clamped_lnum,
+    text = outside_changes_title(selection),
+  })
+end
+
+--- @param items table[]
+--- @param selection SelectionContext
+--- @param line_count integer
+--- @param hunk EditChangeHunk
+local function add_outside_change_items(items, selection, line_count, hunk)
+  if not hunk_is_outside_selection(hunk, selection) then
+    return
+  end
+
+  if hunk.old_count == 0 then
+    add_outside_change_item(items, selection, line_count, hunk.new_start, hunk.new_count)
+    return
+  end
+
+  local old_end = hunk.old_start + hunk.old_count - 1
+  if old_end < selection.start_line or hunk.old_start > selection.end_line then
+    add_outside_change_item(items, selection, line_count, hunk.new_start, hunk.new_count)
+    return
+  end
+
+  if hunk.old_start < selection.start_line then
+    local old_count = selection.start_line - hunk.old_start
+    add_outside_change_item(
+      items,
+      selection,
+      line_count,
+      hunk.new_start,
+      math.min(old_count, hunk.new_count)
+    )
+  end
+
+  if old_end > selection.end_line then
+    local old_count = old_end - selection.end_line
+    local new_count = math.min(old_count, hunk.new_count)
+    add_outside_change_item(
+      items,
+      selection,
+      line_count,
+      hunk.new_start + math.max(hunk.new_count - new_count, 0),
+      new_count
+    )
+  end
+end
+
+--- @param selection SelectionContext
+--- @param edited_lines string[]
+--- @param hunks EditChangeHunk[]
+local function show_outside_changes(selection, edited_lines, hunks)
+  local items = {}
+  local line_count = math.max(#edited_lines, 1)
+
+  for _, hunk in ipairs(hunks) do
+    add_outside_change_items(items, selection, line_count, hunk)
+  end
+
+  if #items == 0 then
+    return
+  end
+
+  vim.fn.setqflist({}, "r", { title = outside_changes_title(selection), items = items })
+  vim.cmd("copen")
+end
+
+--- Translate the original file diff range into the current live-buffer range.
+---
+--- The user may keep editing while opencode runs. Extmarks preserve the selected
+--- block's current position so the changed source can be applied without
+--- reloading the buffer and discarding unrelated live edits.
 --- @param bufnr integer
 --- @param tracker EditRangeTracker
 --- @param selection SelectionContext
@@ -96,6 +234,9 @@ local function current_apply_range(bufnr, tracker, selection, old_start, old_end
 end
 
 --- Apply the source-file edit back into the live buffer without reloading it.
+---
+--- opencode edits the file on disk. 66 reads that changed file, finds the
+--- minimal changed range, and patches only the corresponding live-buffer lines.
 --- @param source_bufnr integer
 --- @param selection SelectionContext
 --- @param tracker EditRangeTracker
@@ -107,6 +248,7 @@ local function apply_changed_source(source_bufnr, selection, tracker, original_l
 
   local ok, err = pcall(function()
     local edited_lines = vim.fn.readfile(selection.path)
+    local hunks = changed_hunks(original_lines, edited_lines)
     local old_start, old_end, new_start, new_end = changed_range(original_lines, edited_lines)
     if not old_start or not old_end or not new_start or not new_end then
       return
@@ -124,6 +266,7 @@ local function apply_changed_source(source_bufnr, selection, tracker, original_l
     vim.api.nvim_buf_call(source_bufnr, function()
       vim.cmd("silent noautocmd write!")
     end)
+    show_outside_changes(selection, edited_lines, hunks)
   end)
   if not ok then
     vim.notify("Edit66 could not apply changed source: " .. tostring(err), vim.log.levels.WARN)

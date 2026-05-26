@@ -1,0 +1,24 @@
+---@meta
+
+---@class SelectionContext
+---@field path string Absolute path of the selected buffer, or empty for unnamed buffers.
+---@field filetype string Neovim filetype for the selected buffer.
+---@field start_line integer 1-based first selected line.
+---@field end_line integer 1-based last selected line.
+---@field selected string Selected text prefixed with source line numbers.
+---@field current_file string Whole current file with line numbers, or an omission notice when too large.
+---@field edit_context string Nearby current-file lines around the selection for Edit Selection prompts.
+
+---@class SixtySixConfig
+---@field model string opencode model identifier.
+---@field variant string opencode variant name.
+---@field agent string opencode agent name.
+---@field max_file_lines integer Maximum current-file lines sent as Selection Context.
+---@field edit_context_lines integer Maximum nearby source lines sent as Edit Selection context.
+---@field response_layout "right_split"|"bottom_split"|"float"|"tab" Response View placement.
+---@field ask_keymap string|false Visual-mode Ask About Selection mapping, or false to disable.
+---@field explain_keymap string|false Visual-mode Explain Selection preset mapping, or false to disable.
+---@field search_keymap string|false Normal-mode Project Search mapping, or false to disable.
+---@field history_keymap string|false Normal-mode Session History mapping, or false to disable.
+---@field edit_keymap string|false Edit Selection mapping, or false to disable.
+---@field cancel_keymap string|false Cancel the active request mapping, or false to disable.

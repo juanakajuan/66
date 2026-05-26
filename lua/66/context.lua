@@ -2,15 +2,6 @@ local config = require("66.config")
 
 local M = {}
 
---- @class SelectionContext
---- @field path string Absolute path of the selected buffer, or empty for unnamed buffers.
---- @field filetype string Neovim filetype for the selected buffer.
---- @field start_line integer 1-based first selected line.
---- @field end_line integer 1-based last selected line.
---- @field selected string Selected text prefixed with source line numbers.
---- @field current_file string Whole current file with line numbers, or an omission notice when too large.
---- @field edit_context string Nearby current-file lines around the selection for Edit Selection prompts.
-
 --- Normalize visual marks into zero-based buffer text coordinates.
 --- @param bufnr integer
 --- @param start_pos [integer, integer, integer, integer]

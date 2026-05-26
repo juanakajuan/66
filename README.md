@@ -68,11 +68,20 @@ Set any keymap option to `false` to disable it.
 
 ## Workflows
 
-- Ask/Explain are read-only and display the assistant answer in a scratch Response View.
-- Edit asks opencode to change the selected code or immediately adjacent lines, then applies the changed source back into the live buffer.
+- Ask prompts for a question about the visual selection. Write the prompt buffer
+  with `:w` to submit, then 66 opens the answer in a scratch Response View.
+- Explain is read-only and sends a preset explanation prompt for the visual selection.
+- Edit prompts for an instruction, asks opencode to change the selected code or
+  immediately adjacent lines, then applies the changed source back into the live
+  buffer without reloading it.
+- If an Edit changes lines outside the selected range, 66 opens quickfix entries
+  pointing at the outside changes so they can be reviewed.
 - Search asks opencode for project locations and opens parsed results in quickfix.
-- History lists recent `[66]` opencode sessions for the current working directory and opens the selected assistant response.
-- Cancel terminates the newest still-running 66 request in the current Neovim instance.
+  Unparseable output is shown in a Response View.
+- History lists recent `[66]` opencode sessions for the current working directory
+  and opens the selected assistant response.
+- Cancel terminates the newest still-running 66 request in the current Neovim
+  instance. It does not undo source changes or delete opencode session history.
 
 ## Testing
 
