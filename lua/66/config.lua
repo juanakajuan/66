@@ -1,8 +1,8 @@
 local M = {}
 
 local defaults = {
-  model = "openai/gpt-5.5",
-  variant = "low",
+  model = "openai/gpt-5.5-fast",
+  variant = "medium",
   agent = "build",
   max_file_lines = 400,
   edit_context_lines = 120,
