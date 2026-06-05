@@ -7,19 +7,31 @@ local M = {}
 
 local status_namespace = vim.api.nvim_create_namespace("66_ask_status")
 
+local ask_presets = {
+  explain = {
+    question = "Explain this selection clearly and concisely.",
+    status_label = "Explaining",
+  },
+}
+
+--- @class AskRequest
+--- @field question string User-facing question or preset instruction.
+--- @field status_label string Inline status label shown while opencode runs.
+
 --- Run opencode for an Ask prompt, then open the response after completion.
 --- @param source_bufnr integer
 --- @param selection SelectionContext
---- @param question string
-local function run_question(source_bufnr, selection, question)
+--- @param request AskRequest
+local function run_question(source_bufnr, selection, request)
   local stop_status = ui.start_inline_status(
     source_bufnr,
     status_namespace,
     selection.start_line,
     selection.end_line,
-    "Asking"
+    request.status_label
   )
-  local command = opencode.command(prompts.ask(question, selection), opencode.ask_title(question))
+  local command =
+    opencode.command(prompts.ask(request.question, selection), opencode.ask_title(request.question))
 
   opencode.run(command, function(result, text, state)
     stop_status()
@@ -42,8 +54,8 @@ local function run_question(source_bufnr, selection, question)
 end
 
 --- Ask opencode about the current visual selection with a provided question.
---- @param question string User-facing question or preset instruction.
-local function ask_selection(question)
+--- @param request AskRequest
+local function ask_selection(request)
   local source_bufnr = vim.api.nvim_get_current_buf()
   local ok, selection = pcall(context.selection)
   if not ok then
@@ -51,7 +63,7 @@ local function ask_selection(question)
     return
   end
 
-  run_question(source_bufnr, selection, question)
+  run_question(source_bufnr, selection, request)
 end
 
 --- Ask opencode about the current visual selection without editing source buffers.
@@ -64,13 +76,16 @@ function M.run()
   end
 
   ui.capture_prompt(" 66 ask ", "66 ask", "Ask66", function(question)
-    run_question(source_bufnr, selection, question)
+    run_question(source_bufnr, selection, {
+      question = question,
+      status_label = "Asking",
+    })
   end)
 end
 
 --- Explain the current visual selection without asking for a prompt.
 function M.explain()
-  ask_selection("Explain this selection clearly and concisely.")
+  ask_selection(ask_presets.explain)
 end
 
 return M

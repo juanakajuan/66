@@ -76,6 +76,7 @@ function M.create_buffer(lines, filetype, row, col)
 
   local bufnr = vim.api.nvim_create_buf(false, false)
   vim.api.nvim_set_current_buf(bufnr)
+  vim.bo[bufnr].swapfile = false
   vim.bo[bufnr].filetype = filetype or "lua"
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   vim.api.nvim_win_set_cursor(0, { row or 1, col or 0 })
