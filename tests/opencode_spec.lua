@@ -7,6 +7,10 @@ describe("66.opencode", function()
   end)
 
   it("requests JSON output from opencode commands", function()
+    require("66.config").setup({
+      model = "openai/gpt-5.5",
+      variant = "low",
+    })
     local opencode = require("66.opencode")
 
     local command = opencode.command("question", "title")

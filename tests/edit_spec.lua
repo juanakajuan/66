@@ -82,6 +82,49 @@ describe("66.edit", function()
     assert.same({ "silent noautocmd write!" }, commands)
   end)
 
+  it("applies opencode edits to a moved selection", function()
+    local edit = require("66.edit")
+    local opencode = require("66.opencode")
+    local ui = require("66.ui")
+    local bufnr = test_utils.create_buffer({
+      "local before = old_before()",
+      "local value = old()",
+      "return value",
+    }, "lua")
+    local commands = {}
+
+    vim.api.nvim_buf_set_name(bufnr, "/tmp/edit66-moved-selection.lua")
+    test_utils.patch_selection(2, 1, 2, 1, "V")
+    test_utils.patch(ui, "capture_prompt", function(_, _, _, on_submit)
+      on_submit("Use new_value()")
+    end)
+    test_utils.patch(opencode, "run", function(_, on_complete)
+      vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, { "local inserted = true" })
+      on_complete({ code = 0 }, "changed")
+    end)
+    test_utils.patch(vim.fn, "readfile", function(path)
+      assert.equals("/tmp/edit66-moved-selection.lua", path)
+      return {
+        "local before = old_before()",
+        "local value = new_value()",
+        "return value",
+      }
+    end)
+    test_utils.patch(vim, "cmd", function(command)
+      table.insert(commands, command)
+    end)
+
+    edit.run()
+
+    assert.same({
+      "local inserted = true",
+      "local before = old_before()",
+      "local value = new_value()",
+      "return value",
+    }, test_utils.buffer_lines(bufnr))
+    assert.same({ "silent noautocmd write!" }, commands)
+  end)
+
   it("opens quickfix for opencode edits outside the selected block", function()
     local edit = require("66.edit")
     local opencode = require("66.opencode")
