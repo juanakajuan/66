@@ -94,29 +94,32 @@ end
 --- @param question string
 function M.run(question)
   local stop_throbber = ui.start_status_throbber("Searching")
-  local command = opencode.command(prompts.search(question), opencode.search_title(question))
 
-  opencode.run(command, function(result, text, state)
-    stop_throbber()
+  opencode.submit({
+    kind = "Search",
+    title = question,
+    prompt = prompts.search(question),
+    on_complete = function(result, text, state)
+      stop_throbber()
 
-    if state and state.canceled then
-      return
-    end
+      if state and state.canceled then
+        return
+      end
 
-    if result.code ~= 0 then
-      show_search_error(result.code, text)
-      return
-    end
+      if result.code ~= 0 then
+        show_search_error(result.code, text)
+        return
+      end
 
-    local items = parse_search_results(text)
-    if #items == 0 then
-      show_search_raw_output(question, text)
-      return
-    end
+      local items = parse_search_results(text)
+      if #items == 0 then
+        show_search_raw_output(question, text)
+        return
+      end
 
-    vim.fn.setqflist({}, "r", { title = quickfix_title(question), items = items })
-    vim.cmd("copen")
-  end, {
+      vim.fn.setqflist({}, "r", { title = quickfix_title(question), items = items })
+      vim.cmd("copen")
+    end,
     on_cancel = stop_throbber,
   })
 end

@@ -32,6 +32,44 @@ describe("66.opencode", function()
     }, command)
   end)
 
+  it("submits typed requests with a session title", function()
+    local opencode = require("66.opencode")
+    local captured_command
+    local completed = false
+
+    test_utils.patch(vim, "system", function(command, _, on_complete)
+      captured_command = command
+      on_complete({ code = 0 })
+    end)
+
+    opencode.submit({
+      kind = "Search",
+      title = "where is auth",
+      prompt = "prompt text",
+      on_complete = function()
+        completed = true
+      end,
+    })
+    test_utils.next_frame()
+
+    assert.same({
+      "opencode",
+      "run",
+      "--format",
+      "json",
+      "--agent",
+      "build",
+      "-m",
+      "openai/gpt-5.5-fast",
+      "--variant",
+      "medium",
+      "--title",
+      "[66] Search: where is auth",
+      "prompt text",
+    }, captured_command)
+    assert.is_true(completed)
+  end)
+
   it("returns final answer text from opencode part events", function()
     local opencode = require("66.opencode")
     local completed_text

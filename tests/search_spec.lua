@@ -19,8 +19,10 @@ describe("66.search", function()
         stopped = true
       end
     end)
-    test_utils.patch(opencode, "run", function(_, on_complete)
-      on_complete(
+    test_utils.patch(opencode, "submit", function(submission)
+      assert.equals("Search", submission.kind)
+      assert.equals("find matches", submission.title)
+      submission.on_complete(
         { code = 0 },
         test_utils.joined({
           "/tmp/alpha.lua:12:3,2,first match",
@@ -65,8 +67,8 @@ describe("66.search", function()
     test_utils.patch(ui, "start_status_throbber", function()
       return function() end
     end)
-    test_utils.patch(opencode, "run", function(_, on_complete)
-      on_complete({ code = 0 }, "plain prose instead of Search Results")
+    test_utils.patch(opencode, "submit", function(submission)
+      submission.on_complete({ code = 0 }, "plain prose instead of Search Results")
     end)
     test_utils.patch(ui, "open_scratch_response", function(name, lines, filetype)
       response = { name = name, lines = lines, filetype = filetype }
@@ -94,8 +96,8 @@ describe("66.search", function()
     test_utils.patch(ui, "start_status_throbber", function()
       return function() end
     end)
-    test_utils.patch(opencode, "run", function(_, on_complete)
-      on_complete({ code = 7 }, "boom")
+    test_utils.patch(opencode, "submit", function(submission)
+      submission.on_complete({ code = 7 }, "boom")
     end)
     test_utils.patch(ui, "open_scratch_response", function(name, lines, filetype)
       response = { name = name, lines = lines, filetype = filetype }

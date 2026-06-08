@@ -24,8 +24,10 @@ describe("66.ask", function()
       assert.equals("Ask66", label)
       on_submit("What does this do?")
     end)
-    test_utils.patch(opencode, "run", function(_, on_complete)
-      complete = on_complete
+    test_utils.patch(opencode, "submit", function(submission)
+      assert.equals("Ask", submission.kind)
+      assert.equals("What does this do?", submission.title)
+      complete = submission.on_complete
     end)
     test_utils.patch(ui, "open_scratch_response", function(name, lines, filetype)
       response = { name = name, lines = lines, filetype = filetype }
@@ -59,8 +61,10 @@ describe("66.ask", function()
     local complete
 
     test_utils.patch_selection(1, 1, 1, 1, "V")
-    test_utils.patch(opencode, "run", function(_, on_complete)
-      complete = on_complete
+    test_utils.patch(opencode, "submit", function(submission)
+      assert.equals("Ask", submission.kind)
+      assert.equals("Explain this selection clearly and concisely.", submission.title)
+      complete = submission.on_complete
     end)
     test_utils.patch(ui, "open_scratch_response", function() end)
 

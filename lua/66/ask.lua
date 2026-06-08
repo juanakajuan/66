@@ -30,25 +30,27 @@ local function run_question(source_bufnr, selection, request)
     selection.end_line,
     request.status_label
   )
-  local command =
-    opencode.command(prompts.ask(request.question, selection), opencode.ask_title(request.question))
 
-  opencode.run(command, function(result, text, state)
-    stop_status()
+  opencode.submit({
+    kind = "Ask",
+    title = request.question,
+    prompt = prompts.ask(request.question, selection),
+    on_complete = function(result, text, state)
+      stop_status()
 
-    if state and state.canceled then
-      return
-    end
+      if state and state.canceled then
+        return
+      end
 
-    if result.code ~= 0 then
-      text = string.format("opencode exited with code %d\n\n%s", result.code, text)
-    end
-    if text == "" then
-      text = "opencode completed without output."
-    end
+      if result.code ~= 0 then
+        text = string.format("opencode exited with code %d\n\n%s", result.code, text)
+      end
+      if text == "" then
+        text = "opencode completed without output."
+      end
 
-    ui.open_scratch_response("66 response", vim.split(text, "\n", { plain = true }), "markdown")
-  end, {
+      ui.open_scratch_response("66 response", vim.split(text, "\n", { plain = true }), "markdown")
+    end,
     on_cancel = stop_status,
   })
 end

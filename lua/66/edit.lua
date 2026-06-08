@@ -37,25 +37,27 @@ function M.run()
       selection.end_line,
       "Implementing"
     )
-    local command =
-      opencode.command(prompts.edit(instruction, selection), opencode.edit_title(instruction))
 
-    opencode.run(command, function(result, text, state)
-      stop_status()
+    opencode.submit({
+      kind = "Edit",
+      title = instruction,
+      prompt = prompts.edit(instruction, selection),
+      on_complete = function(result, text, state)
+        stop_status()
 
-      if state and state.canceled then
-        edit_application.discard(application)
-        return
-      end
+        if state and state.canceled then
+          edit_application.discard(application)
+          return
+        end
 
-      if result.code ~= 0 then
-        edit_application.discard(application)
-        show_edit_error(result.code, text)
-        return
-      end
+        if result.code ~= 0 then
+          edit_application.discard(application)
+          show_edit_error(result.code, text)
+          return
+        end
 
-      edit_application.apply_changed_source(application)
-    end, {
+        edit_application.apply_changed_source(application)
+      end,
       on_cancel = function()
         stop_status()
         edit_application.discard(application)
