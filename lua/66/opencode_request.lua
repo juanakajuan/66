@@ -89,6 +89,42 @@ local function combined_output(output, result)
   return result.stdout or result.stderr or ""
 end
 
+--- Return raw command output, keeping stderr for failed commands.
+--- @param stdout string[]
+--- @param stderr string[]
+--- @param result vim.SystemCompleted
+--- @return string
+local function raw_output(stdout, stderr, result)
+  local text = table.concat(stdout, "")
+  if text == "" and result.stdout then
+    text = result.stdout
+  end
+
+  if result.code ~= 0 then
+    local error_text = table.concat(stderr, "")
+    if error_text == "" and result.stderr then
+      error_text = result.stderr
+    end
+    text = text .. error_text
+  end
+
+  if text == "" and result.stderr then
+    return result.stderr
+  end
+
+  return text
+end
+
+--- @param output string[]
+--- @return fun(_: any, data: string?)
+local function append_output(output)
+  return function(_, data)
+    if data and data ~= "" then
+      table.insert(output, data)
+    end
+  end
+end
+
 --- Drop opencode's captured status prologue from response text.
 --- @param text string
 --- @return string
@@ -186,6 +222,29 @@ local function newest_active_request()
   end
 end
 
+--- Run an opencode process through the shared active-request lifecycle.
+--- @param command string[]
+--- @param stdout fun(_: any, data: string?)
+--- @param stderr fun(_: any, data: string?)
+--- @param on_complete fun(result: vim.SystemCompleted, request: ActiveOpenCodeRequest)
+--- @param opts? OpenCodeRunOpts
+local function run_process(command, stdout, stderr, on_complete, opts)
+  local request = register_request(nil, opts)
+  request.handle = vim.system(
+    command,
+    {
+      text = true,
+      cwd = vim.fn.getcwd(),
+      stdout = stdout,
+      stderr = stderr,
+    },
+    vim.schedule_wrap(function(result)
+      unregister_request(request)
+      on_complete(result, request)
+    end)
+  )
+end
+
 --- Format opencode's completed process result for display.
 --- @param result vim.SystemCompleted
 --- @param text string
@@ -208,30 +267,28 @@ end
 --- @param opts? OpenCodeRunOpts
 function M.run(command, on_complete, opts)
   local output = {}
-  local function append_output(_, data)
-    if data and data ~= "" then
-      table.insert(output, data)
-    end
-  end
 
-  local request = register_request(nil, opts)
-  request.handle = vim.system(
-    command,
-    {
-      text = true,
-      cwd = vim.fn.getcwd(),
-      stdout = append_output,
-      stderr = append_output,
-    },
-    vim.schedule_wrap(function(result)
-      unregister_request(request)
+  run_process(command, append_output(output), append_output(output), function(result, request)
+    local text = combined_output(output, result)
+    on_complete(result, readable_output(text), {
+      canceled = request.canceled,
+    })
+  end, opts)
+end
 
-      local text = combined_output(output, result)
-      on_complete(result, readable_output(text), {
-        canceled = request.canceled,
-      })
-    end)
-  )
+--- Run opencode and return raw stdout, preserving stderr for failures.
+--- @param command string[]
+--- @param on_complete fun(result: vim.SystemCompleted, text: string, state: OpenCodeRunState)
+--- @param opts? OpenCodeRunOpts
+function M.run_raw(command, on_complete, opts)
+  local stdout = {}
+  local stderr = {}
+
+  run_process(command, append_output(stdout), append_output(stderr), function(result, request)
+    on_complete(result, raw_output(stdout, stderr, result), {
+      canceled = request.canceled,
+    })
+  end, opts)
 end
 
 function M.cancel_active()

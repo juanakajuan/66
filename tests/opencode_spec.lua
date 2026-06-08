@@ -137,6 +137,24 @@ describe("66.opencode", function()
     assert.equals("This is the actual answer.", completed_text)
   end)
 
+  it("returns raw command output and appends stderr on failure", function()
+    local opencode = require("66.opencode")
+    local completed_text
+
+    test_utils.patch(vim, "system", function(_, opts, on_complete)
+      opts.stdout(nil, "partial stdout")
+      opts.stderr(nil, "\npartial stderr")
+      on_complete({ code = 7 })
+    end)
+
+    opencode.run_raw({ "opencode", "session", "list" }, function(_, text)
+      completed_text = text
+    end)
+    test_utils.next_frame()
+
+    assert.equals("partial stdout\npartial stderr", completed_text)
+  end)
+
   it("cancels the newest active request with TERM", function()
     local opencode = require("66.opencode")
     local completions = {}

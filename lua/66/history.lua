@@ -1,3 +1,4 @@
+local opencode = require("66.opencode")
 local ui = require("66.ui")
 
 local M = {}
@@ -111,38 +112,6 @@ local function render_session(session, exported)
   return lines
 end
 
---- Run an opencode history command in the current Project.
---- @param command string[]
---- @param on_complete fun(result: vim.SystemCompleted, text: string)
-local function run_command(command, on_complete)
-  local stdout = {}
-  local stderr = {}
-  local function append_output(output)
-    return function(_, data)
-      if data and data ~= "" then
-        table.insert(output, data)
-      end
-    end
-  end
-
-  vim.system(
-    command,
-    {
-      text = true,
-      cwd = vim.fn.getcwd(),
-      stdout = append_output(stdout),
-      stderr = append_output(stderr),
-    },
-    vim.schedule_wrap(function(result)
-      local text = table.concat(stdout, "")
-      if result.code ~= 0 then
-        text = text .. table.concat(stderr, "")
-      end
-      on_complete(result, text)
-    end)
-  )
-end
-
 --- Show opencode failure output for Session History.
 --- @param title string
 --- @param code integer
@@ -169,8 +138,12 @@ end
 --- @param session OpencodeSession
 local function open_session(session)
   local stop_throbber = ui.start_status_throbber("Loading session")
-  run_command({ "opencode", "export", session.id }, function(result, text)
+  opencode.run_raw({ "opencode", "export", session.id }, function(result, text, state)
     stop_throbber()
+    if state and state.canceled then
+      return
+    end
+
     if result.code ~= 0 then
       show_error("66 history error", result.code, text)
       return
@@ -205,10 +178,14 @@ end
 --- Show opencode sessions for the current project and open a selected transcript.
 function M.run()
   local stop_throbber = ui.start_status_throbber("Loading history")
-  run_command(
+  opencode.run_raw(
     { "opencode", "session", "list", "--format", "json", "--max-count", tostring(MAX_SESSIONS) },
-    function(result, text)
+    function(result, text, state)
       stop_throbber()
+      if state and state.canceled then
+        return
+      end
+
       if result.code ~= 0 then
         show_error("66 history error", result.code, text)
         return

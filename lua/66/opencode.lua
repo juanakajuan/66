@@ -67,6 +67,14 @@ function M.run(command, on_complete, opts)
   opencode_request.run(command, on_complete, opts)
 end
 
+--- Run opencode and return raw stdout, preserving stderr for failures.
+--- @param command string[]
+--- @param on_complete fun(result: vim.SystemCompleted, text: string, state: OpenCodeRunState)
+--- @param opts? OpenCodeRunOpts
+function M.run_raw(command, on_complete, opts)
+  opencode_request.run_raw(command, on_complete, opts)
+end
+
 --- @class OpenCodeResponseOpts
 --- @field on_complete? fun(result: vim.SystemCompleted, text: string)
 
